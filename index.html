@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Noob Hacker – Probability Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  margin:0;
+  font-family:system-ui,-apple-system;
+  background:radial-gradient(circle at top,#1b2a40,#050712 70%);
+  color:#eaf1ff;
+}
+header{
+  padding:14px;
+  border-bottom:1px solid rgba(255,255,255,.08)
+}
+.title{
+  font-size:18px;
+  font-weight:600;
+  margin-bottom:8px
+}
+.topbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+  justify-content:space-between
+}
+select,button{
+  background:#0d1a33;
+  color:#fff;
+  border:1px solid #2f4b8f;
+  border-radius:8px;
+  padding:6px 12px;
+  cursor:pointer
+}
+.status{
+  display:flex;
+  gap:10px;
+  font-size:12px
+}
+.dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  display:inline-block
+}
+.green{background:#4dff88}
+.red{background:#ff5252}
+
+.container{
+  padding:14px;
+  display:grid;
+  gap:14px
+}
+.card{
+  background:rgba(255,255,255,.06);
+  border-radius:14px;
+  padding:14px
+}
+h3{
+  margin:0 0 10px;
+  font-size:15px
+}
+.row{
+  display:flex;
+  justify-content:space-between;
+  font-size:14px;
+  margin:6px 0
+}
+.bar{
+  height:8px;
+  background:#222;
+  border-radius:6px;
+  overflow:hidden
+}
+.fill{height:100%;background:#4fa3ff}
+.smallfill{background:#ff9800}
+.greenfill{background:#4dff88}
+.redfill{background:#ff5252}
+.violetfill{background:#c77dff}
+
+.risk{
+  text-align:center;
+  font-size:20px;
+  font-weight:700;
+  padding:12px;
+  border-radius:12px
+}
+.easy{background:rgba(77,255,136,.15);color:#4dff88}
+.normal{background:rgba(255,193,7,.15);color:#ffc107}
+.hard{background:rgba(255,82,82,.15);color:#ff5252}
+
+.top3{
+  background:rgba(79,163,255,.15);
+  border-radius:10px;
+  padding:10px;
+  font-size:14px
+}
+
+footer{
+  text-align:center;
+  font-size:12px;
+  opacity:.6;
+  margin:12px
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="title">Noob Hacker – Market Probability Dashboard</div>
+  <div class="topbar">
+    <select id="market">
+      <option value="1">30 Second Market</option>
+      <option value="2">1 Minute Market</option>
+    </select>
+
+    <button onclick="manualRefresh()">Manual Refresh</button>
+
+    <div id="countdown">Next refresh: --</div>
+
+    <div class="status">
+      <span><i class="dot" id="apiDot"></i> API</span>
+      <span><i class="dot" id="corsDot"></i> CORS</span>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <h3>Risk Level</h3>
+    <div id="riskBox" class="risk">Loading…</div>
+  </div>
+
+  <div class="card">
+    <h3>Top 3 Digit Probability</h3>
+    <div id="top3" class="top3">Calculating…</div>
+  </div>
+
+  <div class="card">
+    <h3>Big / Small</h3>
+    <div id="bigSmall"></div>
+  </div>
+
+  <div class="card">
+    <h3>Color Probability</h3>
+    <div id="colorProb"></div>
+  </div>
+
+  <div class="card">
+    <h3>Digit Probability (0–9)</h3>
+    <div id="digitProb"></div>
+  </div>
+
+</div>
+
+<footer>
+Based on last 100 results • Observation only • Credit: Noob Hacker
+</footer>
+
+<script>
+const API =
+ "https://draw.ar-lottery01.com/WinGo/GetHistoryIssuePage.json";
+const PROXY = "https://api.allorigins.win/raw?url=";
+
+let refreshTimer=null, countdownTimer=null;
+
+document.getElementById("market").onchange=manualRefresh;
+
+function manualRefresh(){
+  clearTimers();
+  loadData();
+}
+
+function clearTimers(){
+  if(refreshTimer) clearTimeout(refreshTimer);
+  if(countdownTimer) clearInterval(countdownTimer);
+}
+
+async function loadData(){
+  const gameId=document.getElementById("market").value;
+  const url=PROXY+encodeURIComponent(
+    API+"?gameId="+gameId+"&pageSize=100&pageNo=1"
+  );
+  try{
+    const res=await fetch(url,{cache:"no-store"});
+    const json=await res.json();
+    document.getElementById("apiDot").className="dot green";
+    document.getElementById("corsDot").className="dot green";
+    analyse(json.data.list);
+    scheduleNext();
+  }catch{
+    document.getElementById("apiDot").className="dot red";
+    document.getElementById("corsDot").className="dot red";
+    document.getElementById("riskBox").textContent="DATA ERROR";
+  }
+}
+
+function scheduleNext(){
+  clearTimers();
+  const market=document.getElementById("market").value;
+  const period=market==="1"?30000:60000;
+  const delay=period-(Date.now()%period)+5000;
+  startCountdown(delay);
+  refreshTimer=setTimeout(loadData,delay);
+}
+
+function startCountdown(ms){
+  let s=Math.floor(ms/1000);
+  updateCountdown(s);
+  countdownTimer=setInterval(()=>{
+    s--;
+    updateCountdown(s);
+    if(s<=0) clearInterval(countdownTimer);
+  },1000);
+}
+function updateCountdown(s){
+  document.getElementById("countdown").textContent=
+    "Next refresh: "+s+"s";
+}
+
+function analyse(list){
+  let big=0,small=0;
+  let color={g:0,r:0,v:0};
+  let digit=Array(10).fill(0);
+
+  list.forEach(r=>{
+    const n=+r.number;
+    n>=5?big++:small++;
+    if(n===0||n===5) color.v++;
+    else if(n%2) color.g++;
+    else color.r++;
+    digit[n]++;
+  });
+
+  renderBigSmall(big,small,list.length);
+  renderColor(color,list.length);
+  renderDigit(digit,list.length);
+  renderRisk(big,small,color,list.length);
+  renderTop3(digit,list.length);
+}
+
+function renderTop3(d,t){
+  const top=d.map((c,i)=>({i,p:c/t*100}))
+             .sort((a,b)=>b.p-a.p)
+             .slice(0,3);
+  document.getElementById("top3").innerHTML=
+    top.map(x=>`Digit ${x.i} → ${x.p.toFixed(1)}%`).join("<br>");
+}
+
+function renderRisk(b,s,c,t){
+  const diff=Math.abs(b-s)/t*100;
+  const flip=Math.min(c.g,c.r)/t*100;
+  const box=document.getElementById("riskBox");
+  if(diff>15 && flip<25){
+    box.textContent="EASY"; box.className="risk easy";
+  }else if(diff>7){
+    box.textContent="NORMAL"; box.className="risk normal";
+  }else{
+    box.textContent="HARD"; box.className="risk hard";
+  }
+}
+
+function renderBigSmall(b,s,t){
+ document.getElementById("bigSmall").innerHTML=
+  `<div class="row">Big ${(b/t*100).toFixed(1)}%</div>
+   <div class="bar"><div class="fill" style="width:${b/t*100}%"></div></div>
+   <div class="row">Small ${(s/t*100).toFixed(1)}%</div>
+   <div class="bar"><div class="fill smallfill" style="width:${s/t*100}%"></div></div>`;
+}
+
+function renderColor(c,t){
+ document.getElementById("colorProb").innerHTML=
+  `<div class="row">Green ${(c.g/t*100).toFixed(1)}%</div>
+   <div class="bar"><div class="fill greenfill" style="width:${c.g/t*100}%"></div></div>
+   <div class="row">Red ${(c.r/t*100).toFixed(1)}%</div>
+   <div class="bar"><div class="fill redfill" style="width:${c.r/t*100}%"></div></div>
+   <div class="row">Violet ${(c.v/t*100).toFixed(1)}%</div>
+   <div class="bar"><div class="fill violetfill" style="width:${c.v/t*100}%"></div></div>`;
+}
+
+function renderDigit(d,t){
+ let h="";
+ d.forEach((c,i)=>{
+  h+=`<div class="row">Digit ${i} ${(c/t*100).toFixed(1)}%</div>
+      <div class="bar"><div class="fill" style="width:${c/t*100}%"></div></div>`;
+ });
+ document.getElementById("digitProb").innerHTML=h;
+}
+
+loadData();
+</script>
+
+</body>
+</html>
