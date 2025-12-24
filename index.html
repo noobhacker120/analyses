@@ -82,9 +82,11 @@ footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
 <div class="container">
 
  <div class="card">
-  <h3>Period Info</h3>
-  <div class="row"><span>Running Period</span><span id="currentPeriod">--</span></div>
-  <div class="row"><span>Next Period</span><span id="nextPeriod">--</span></div>
+  <h3>Running Period</h3>
+  <div class="row">
+    <span>Current</span>
+    <span id="runningPeriod">--</span>
+  </div>
  </div>
 
  <div class="card">
@@ -176,13 +178,12 @@ function startCountdown(ms){
 }
 
 function analyse(list){
- /* PERIOD */
- const cur=list[0].issueNumber;
- document.getElementById("currentPeriod").textContent=cur;
- document.getElementById("nextPeriod").textContent=(BigInt(cur)+1n).toString();
+ /* RUNNING PERIOD = last closed + 1 */
+ const running = (BigInt(list[0].issueNumber) + 1n).toString();
+ document.getElementById("runningPeriod").textContent = running;
 
- /* HISTORY 10 */
- document.getElementById("history").innerHTML=
+ /* LAST 10 HISTORY */
+ document.getElementById("history").innerHTML =
   list.slice(0,10).map(r=>
    `<div class="hist-row">
      <span>${r.issueNumber.slice(-5)}</span>
