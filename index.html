@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Noob Hacker – Complete Market Observer</title>
+<title>Noob Hacker – Complete Market Observation</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -19,34 +19,45 @@ select,button{
  background:#0d1a33;color:#fff;border:1px solid #2f4b8f;
  border-radius:8px;padding:6px 12px;cursor:pointer
 }
-
 .container{padding:14px;display:grid;gap:14px}
 .card{background:rgba(255,255,255,.06);border-radius:14px;padding:14px}
 h3{margin:0 0 10px;font-size:15px}
-.row{display:flex;justify-content:space-between;font-size:14px;margin:6px 0}
 
-.bar{height:8px;background:#222;border-radius:6px;overflow:hidden}
-.fill{height:100%;background:#4fa3ff}
-.greenfill{background:#4dff88}
-.redfill{background:#ff5252}
-.violetfill{background:#c77dff}
+table{
+ width:100%;
+ border-collapse:collapse;
+ font-size:13px
+}
+th,td{
+ padding:6px;
+ text-align:center
+}
+th{
+ background:rgba(255,255,255,.08);
+ font-weight:600
+}
+tr:nth-child(even){
+ background:rgba(0,0,0,.25)
+}
+.match{color:#4dff88;font-weight:600}
+.miss{color:#ff5252;font-weight:600}
 
-.risk{text-align:center;font-size:20px;font-weight:700;padding:12px;border-radius:12px}
+.risk{
+ text-align:center;
+ font-size:20px;
+ font-weight:700;
+ padding:12px;
+ border-radius:12px
+}
 .easy{background:rgba(77,255,136,.15);color:#4dff88}
 .normal{background:rgba(255,193,7,.15);color:#ffc107}
 .hard{background:rgba(255,82,82,.15);color:#ff5252}
 
-.history{font-size:13px;display:grid;gap:6px}
-.hist-row{
- display:grid;
- grid-template-columns:1fr 1fr 1fr 1fr;
- gap:6px;
- background:rgba(0,0,0,.25);
- padding:6px 8px;
- border-radius:6px
+.legend{
+ font-size:12px;
+ opacity:.8;
+ line-height:1.6
 }
-.ok{color:#4dff88;font-weight:600}
-.bad{color:#ff5252;font-weight:600}
 
 footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
 </style>
@@ -62,174 +73,108 @@ footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
    <option value="2">1 Minute Market</option>
   </select>
   <button onclick="manualRefresh()">Manual Refresh</button>
-  <div id="countdown">--</div>
+  <div id="countdown">Next refresh: --</div>
  </div>
 </header>
 
 <div class="container">
 
- <div class="card">
-  <h3>Running Period</h3>
-  <div id="runningPeriod">--</div>
- </div>
+<div class="card">
+ <h3>Running Period</h3>
+ <div id="runningPeriod">--</div>
+</div>
 
- <div class="card">
-  <h3>Risk Level</h3>
-  <div id="riskBox" class="risk">--</div>
- </div>
+<div class="card">
+ <h3>Risk Level</h3>
+ <div id="riskBox" class="risk">--</div>
+</div>
 
- <div class="card">
-  <h3>Prediction vs Actual (Last 10)</h3>
-  <div id="compareHistory" class="history">--</div>
- </div>
+<div class="card">
+ <h3>Prediction vs Actual (Last 10)</h3>
 
- <div class="card">
-  <h3>Top 3 Digit Probability</h3>
-  <div id="top3">--</div>
- </div>
+ <table>
+  <thead>
+   <tr>
+    <th>Period</th>
+    <th>Digit<br>(Pred / Act)</th>
+    <th>Color<br>(Pred / Act)</th>
+    <th>Size<br>(Pred / Act)</th>
+   </tr>
+  </thead>
+  <tbody id="pva"></tbody>
+ </table>
 
- <div class="card">
-  <h3>Big / Small</h3>
-  <div id="bigSmall"></div>
+ <div class="legend">
+  <b>Legend:</b><br>
+  Pred = Script Probability Result<br>
+  Act = Actual Market Result<br>
+  Green = MATCH | Red = MISS
  </div>
-
- <div class="card">
-  <h3>Color Probability</h3>
-  <div id="colorProb"></div>
- </div>
-
- <div class="card">
-  <h3>Digit Probability (0–9)</h3>
-  <div id="digitProb"></div>
- </div>
+</div>
 
 </div>
 
 <footer>
-Observation only • No guaranteed win • Credit: Noob Hacker
+Learning & Observation Only • No Guarantee • Credit: Noob Hacker
 </footer>
 
 <script>
 const API_30S="https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json";
 const API_1M ="https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
-const PROXY  ="https://signal.chat31525.workers.dev/?url=";
+const PROXY="https://signal.chat31525.workers.dev/?url=";
 
 let refreshTimer,countdownTimer;
 document.getElementById("market").onchange=manualRefresh;
 
-function manualRefresh(){
- clearTimeout(refreshTimer);
- clearInterval(countdownTimer);
- loadData();
-}
+function manualRefresh(){clearTimeout(refreshTimer);loadData()}
 
 async function loadData(){
  const market=document.getElementById("market").value;
  const API=market==="1"?API_30S:API_1M;
- const target=API+"?gameId="+market+"&pageSize=100&pageNo=1";
+ const url=PROXY+encodeURIComponent(API+"?pageSize=20&pageNo=1");
 
- try{
-  const res=await fetch(PROXY+encodeURIComponent(target));
-  const json=await res.json();
-  analyse(json.data.list);
-  scheduleNext();
- }catch(e){}
-}
+ const res=await fetch(url);
+ const json=await res.json();
+ const list=json.data.list;
 
-function scheduleNext(){
- const base=document.getElementById("market").value==="1"?30000:60000;
- const delay=base-(Date.now()%base)+5000;
- startCountdown(delay);
- refreshTimer=setTimeout(loadData,delay);
-}
-
-function startCountdown(ms){
- let s=Math.floor(ms/1000);
- document.getElementById("countdown").textContent="Next refresh: "+s+"s";
- countdownTimer=setInterval(()=>{
-  s--;
-  document.getElementById("countdown").textContent="Next refresh: "+s+"s";
-  if(s<=0)clearInterval(countdownTimer);
- },1000);
-}
-
-function analyse(list){
  document.getElementById("runningPeriod").textContent =
   (BigInt(list[0].issueNumber)+1n).toString();
 
- let digit=Array(10).fill(0);
- let color={green:0,red:0,violet:0};
- let size={big:0,small:0};
+ analyse(list);
+}
 
- list.forEach(r=>{
-  const n=+r.number;
-  digit[n]++;
-  n>=5?size.big++:size.small++;
-  if(n===0||n===5)color.violet++;
-  else if(n%2)color.green++; else color.red++;
+function analyse(list){
+ let tbody="";
+ const digitCount=Array(10).fill(0);
+
+ list.forEach(r=>digitCount[+r.number]++);
+
+ const predDigit=digitCount.indexOf(Math.max(...digitCount));
+ const predColor=predDigit===0||predDigit===5?"violet":predDigit%2?"green":"red";
+ const predSize=predDigit>=5?"big":"small";
+
+ list.slice(0,10).forEach(r=>{
+  const dMatch=predDigit==r.number;
+  const cMatch=predColor===(r.color.includes("violet")?"violet":r.color);
+  const sMatch=(r.number>=5?"big":"small")===predSize;
+
+  tbody+=`
+  <tr>
+   <td>${r.issueNumber.slice(-4)}</td>
+   <td class="${dMatch?"match":"miss"}">${predDigit} / ${r.number}</td>
+   <td class="${cMatch?"match":"miss"}">${predColor} / ${r.color}</td>
+   <td class="${sMatch?"match":"miss"}">${predSize} / ${r.number>=5?"big":"small"}</td>
+  </tr>`;
  });
 
- const predDigit=digit.map((c,i)=>({i,c})).sort((a,b)=>b.c-a.c)[0].i;
- const predColor=Object.entries(color).sort((a,b)=>b[1]-a[1])[0][0];
- const predSize=Object.entries(size).sort((a,b)=>b[1]-a[1])[0][0];
+ document.getElementById("pva").innerHTML=tbody;
 
- document.getElementById("compareHistory").innerHTML =
-  list.slice(0,10).map(r=>{
-   const n=+r.number;
-   const actSize=n>=5?"big":"small";
-   const actColor=(n===0||n===5)?"violet":(n%2?"green":"red");
-   return `
-   <div class="hist-row">
-    <span>P${r.issueNumber.slice(-4)}</span>
-    <span class="${n==predDigit?'ok':'bad'}">D ${predDigit}/${n}</span>
-    <span class="${actColor==predColor?'ok':'bad'}">C ${predColor}/${actColor}</span>
-    <span class="${actSize==predSize?'ok':'bad'}">S ${predSize}/${actSize}</span>
-   </div>`;
-  }).join("");
+ const diff=Math.abs(digitCount.filter((_,i)=>i>=5).reduce((a,b)=>a+b,0)
+ - digitCount.filter((_,i)=>i<5).reduce((a,b)=>a+b,0));
 
- renderTop3(digit,list.length);
- renderBigSmall(size,list.length);
- renderColor(color,list.length);
- renderDigit(digit,list.length);
- renderRisk(size,list.length);
-}
-
-function renderRisk(size,t){
- const diff=Math.abs(size.big-size.small)/t*100;
  const box=document.getElementById("riskBox");
- box.textContent=diff>15?"EASY":diff>7?"NORMAL":"HARD";
- box.className="risk "+(diff>15?"easy":diff>7?"normal":"hard");
-}
-
-function renderTop3(d,t){
- document.getElementById("top3").innerHTML=
-  d.map((c,i)=>({i,p:c/t*100}))
-   .sort((a,b)=>b.p-a.p).slice(0,3)
-   .map(x=>`Digit ${x.i} → ${x.p.toFixed(1)}%`).join("<br>");
-}
-
-function renderBigSmall(size,t){
- document.getElementById("bigSmall").innerHTML=
-  `<div class="row">Big ${(size.big/t*100).toFixed(1)}%</div>
-   <div class="bar"><div class="fill" style="width:${size.big/t*100}%"></div></div>
-   <div class="row">Small ${(size.small/t*100).toFixed(1)}%</div>
-   <div class="bar"><div class="fill" style="width:${size.small/t*100}%"></div></div>`;
-}
-
-function renderColor(c,t){
- document.getElementById("colorProb").innerHTML=
-  `<div class="row">Green ${(c.green/t*100).toFixed(1)}%</div>
-   <div class="bar"><div class="fill greenfill" style="width:${c.green/t*100}%"></div></div>
-   <div class="row">Red ${(c.red/t*100).toFixed(1)}%</div>
-   <div class="bar"><div class="fill redfill" style="width:${c.red/t*100}%"></div></div>
-   <div class="row">Violet ${(c.violet/t*100).toFixed(1)}%</div>
-   <div class="bar"><div class="fill violetfill" style="width:${c.violet/t*100}%"></div></div>`;
-}
-
-function renderDigit(d,t){
- document.getElementById("digitProb").innerHTML=
-  d.map((c,i)=>`<div class="row">Digit ${i} ${(c/t*100).toFixed(1)}%</div>
-   <div class="bar"><div class="fill" style="width:${c/t*100}%"></div></div>`).join("");
+ box.className="risk "+(diff>6?"easy":diff>3?"normal":"hard");
+ box.textContent=diff>6?"EASY":diff>3?"NORMAL":"HARD";
 }
 
 loadData();
