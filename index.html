@@ -174,8 +174,8 @@ footer{
 
  <div class="legend">
   <b>Legend:</b><br>
-  Pred = Script Probability Result<br>
-  Act = Actual Market Result<br>
+  Pred = Probability-based observation<br>
+  Act = Actual market result<br>
   Green = MATCH | Red = MISS
  </div>
 </div>
@@ -248,7 +248,7 @@ function scheduleNext(){
 }
 
 function analyse(list){
- // History
+ // Last 10 history
  document.getElementById("history").innerHTML=
   list.slice(0,10).map(r=>
    `<div class="hist">
@@ -267,12 +267,13 @@ function analyse(list){
   else if(n%2)color.g++; else color.r++;
  });
 
- // Prediction logic (simple frequency)
+ // ✅ CORRECT prediction logic
  const predDigit=digitCount.indexOf(Math.max(...digitCount));
- const predColor=predDigit===0||predDigit===5?"violet":predDigit%2?"green":"red";
- const predSize=predDigit>=5?"big":"small";
+ const predColor=color.v>=Math.max(color.g,color.r)
+  ?"violet":color.g>=color.r?"green":"red";
+ const predSize=big>=small?"big":"small";
 
- // PVA table
+ // Prediction vs Actual table
  document.getElementById("pva").innerHTML=
   list.slice(0,10).map(r=>{
    const d=+r.number;
@@ -290,26 +291,26 @@ function analyse(list){
    </tr>`;
   }).join("");
 
- // Risk
+ // Risk Level
  const diff=Math.abs(big-small);
  const box=document.getElementById("riskBox");
  box.textContent=diff>10?"EASY":diff>5?"NORMAL":"HARD";
  box.className="risk "+(diff>10?"easy":diff>5?"normal":"hard");
 
- // Top 3
+ // Top 3 digits
  document.getElementById("top3").innerHTML=
   digitCount.map((c,i)=>({i,p:c/list.length*100}))
    .sort((a,b)=>b.p-a.p).slice(0,3)
    .map(x=>`Digit ${x.i} → ${x.p.toFixed(1)}%`).join("<br>");
 
- // Big Small
+ // Big / Small %
  document.getElementById("bigSmall").innerHTML=
   `Big ${(big/list.length*100).toFixed(1)}%
    <div class="bar"><div class="fill" style="width:${big/list.length*100}%"></div></div>
    Small ${(small/list.length*100).toFixed(1)}%
    <div class="bar"><div class="fill" style="width:${small/list.length*100}%"></div></div>`;
 
- // Color
+ // Color %
  document.getElementById("colorProb").innerHTML=
   `Green ${(color.g/list.length*100).toFixed(1)}%
    <div class="bar"><div class="fill greenfill" style="width:${color.g/list.length*100}%"></div></div>
