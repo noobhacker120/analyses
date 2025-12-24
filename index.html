@@ -2,88 +2,109 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Noob Hacker – Pattern Bias Dashboard</title>
+<title>Noob Hacker – Market Pattern Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body{
- margin:0;
- font-family:system-ui,-apple-system;
- background:radial-gradient(circle at top,#1b2a40,#050712 70%);
- color:#eaf1ff;
+  margin:0;
+  font-family:system-ui,-apple-system;
+  background:radial-gradient(circle at top,#1b2a40,#050712 70%);
+  color:#eaf1ff;
 }
 header{
- padding:14px;
- border-bottom:1px solid rgba(255,255,255,.08)
+  padding:14px;
+  border-bottom:1px solid rgba(255,255,255,.08)
 }
-.title{font-size:18px;font-weight:600;margin-bottom:8px}
+.title{
+  font-size:18px;
+  font-weight:600;
+}
 .topbar{
- display:flex;
- flex-wrap:wrap;
- gap:10px;
- justify-content:space-between;
- align-items:center
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+  margin-top:10px
 }
 select,button{
- background:#0d1a33;
- color:#fff;
- border:1px solid #2f4b8f;
- border-radius:8px;
- padding:6px 12px;
- cursor:pointer
+  background:#0d1a33;
+  color:#fff;
+  border:1px solid #2f4b8f;
+  border-radius:8px;
+  padding:6px 12px;
+  cursor:pointer
 }
 .container{
- padding:14px;
- display:grid;
- gap:14px
+  padding:14px;
+  display:grid;
+  gap:14px
 }
 .card{
- background:rgba(255,255,255,.06);
- border-radius:14px;
- padding:14px
+  background:rgba(255,255,255,.06);
+  border-radius:14px;
+  padding:14px
 }
-h3{margin:0 0 10px;font-size:15px}
+h3{
+  margin:0 0 10px;
+  font-size:15px;
+  opacity:.9
+}
 .row{
- display:flex;
- justify-content:space-between;
- margin:6px 0;
- font-size:14px
+  display:flex;
+  justify-content:space-between;
+  font-size:14px;
+  margin:6px 0
 }
 .bar{
- height:8px;
- background:#222;
- border-radius:6px;
- overflow:hidden
+  height:8px;
+  background:#222;
+  border-radius:6px;
+  overflow:hidden
 }
 .fill{height:100%;background:#4fa3ff}
-.green{color:#4dff88}
-.red{color:#ff5252}
-.orange{color:#ffb74d}
+.green{background:#4dff88}
+.red{background:#ff5252}
+.violet{background:#c77dff}
 
-.biasBox{
- text-align:center;
- font-size:18px;
- font-weight:700
+.bigtext{
+  font-size:22px;
+  font-weight:700;
+  text-align:center
 }
 
-.history{
- display:grid;
- gap:6px;
- font-size:13px
+.flipbox{
+  text-align:center;
+  font-size:14px;
+  opacity:.9
 }
-.hist{
- background:rgba(0,0,0,.25);
- padding:6px 8px;
- border-radius:6px;
- display:flex;
- justify-content:space-between
+
+.table{
+  font-size:13px;
+  display:grid;
+  gap:6px
 }
+.tr{
+  display:grid;
+  grid-template-columns:1.2fr 1fr 1fr 1fr;
+  gap:6px;
+  background:rgba(0,0,0,.25);
+  padding:6px 8px;
+  border-radius:6px
+}
+.th{
+  font-weight:600;
+  opacity:.7;
+  background:none
+}
+.match{color:#4dff88}
+.miss{color:#ff5252}
 
 footer{
- text-align:center;
- font-size:12px;
- opacity:.6;
- margin:12px
+  text-align:center;
+  font-size:12px;
+  opacity:.6;
+  margin:12px
 }
 </style>
 </head>
@@ -91,137 +112,211 @@ footer{
 <body>
 
 <header>
- <div class="title">Noob Hacker – Pattern Bias Dashboard</div>
- <div class="topbar">
-  <select id="market">
-   <option value="30">30 Second</option>
-   <option value="60">1 Minute</option>
-  </select>
-  <button onclick="manualRefresh()">Refresh</button>
-  <div id="timer">--</div>
- </div>
+  <div class="title">Noob Hacker – Market Pattern Dashboard</div>
+  <div class="topbar">
+    <select id="market">
+      <option value="30">30 Second Market</option>
+      <option value="60">1 Minute Market</option>
+    </select>
+    <button onclick="manualRefresh()">Manual Refresh</button>
+    <div id="timer">--</div>
+  </div>
 </header>
 
 <div class="container">
 
- <div class="card">
-  <h3>Running Period</h3>
-  <div class="row">
-   <span>Current</span>
-   <span id="period">--</span>
+  <div class="card">
+    <h3>Running Period</h3>
+    <div class="bigtext" id="runningPeriod">--</div>
   </div>
- </div>
 
- <div class="card">
-  <h3>Big / Small Bias</h3>
-  <div id="bigSmallBias" class="biasBox">--</div>
- </div>
+  <div class="card">
+    <h3>Big / Small Bias</h3>
+    <div class="bigtext" id="bsBias">--</div>
+    <div class="bar"><div class="fill" id="bsBar"></div></div>
+    <div class="flipbox" id="bsFlip">Flip chance: --</div>
+  </div>
 
- <div class="card">
-  <h3>Green / Red Bias</h3>
-  <div id="colorBias" class="biasBox">--</div>
- </div>
+  <div class="card">
+    <h3>Color Bias</h3>
+    <div class="bigtext" id="colorBias">--</div>
+    <div class="bar"><div class="fill" id="colorBar"></div></div>
+    <div class="flipbox" id="colorFlip">Flip chance: --</div>
+  </div>
 
- <div class="card">
-  <h3>Prediction vs Actual (Last 10)</h3>
-  <div id="pvA" class="history">--</div>
- </div>
+  <div class="card">
+    <h3>Prediction vs Actual (Last 10)</h3>
+    <div class="table" id="historyTable">
+      <div class="tr th">
+        <div>Period</div>
+        <div>Script BS</div>
+        <div>Actual BS</div>
+        <div>Result</div>
+      </div>
+    </div>
+  </div>
 
 </div>
 
 <footer>
-Pattern-based bias • Uses last 500 history • Credit: Noob Hacker
+Pattern-based observation only • Credit: Noob Hacker
 </footer>
 
 <script>
-const API_30="https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json";
-const API_60="https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
-const PROXY="https://signal.chat31525.workers.dev/?url=";
+/* CONFIG */
+const API_30 = "https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json";
+const API_60 = "https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
+const PROXY = "https://signal.chat31525.workers.dev/?url=";
 
-let lastPrediction=[];
+let memory = []; // prediction memory
+let refreshTimer, countdownTimer;
 
-function manualRefresh(){loadData()}
+/* UTIL */
+function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+
+/* MAIN */
+document.getElementById("market").onchange = manualRefresh;
+
+function manualRefresh(){
+  clearTimeout(refreshTimer);
+  clearInterval(countdownTimer);
+  loadData();
+}
 
 async function loadData(){
- const sec=document.getElementById("market").value;
- const API=sec==="30"?API_30:API_60;
- const url=PROXY+encodeURIComponent(API+"?pageSize=500&pageNo=1");
+  const sec = document.getElementById("market").value;
+  const API = sec=="30"?API_30:API_60;
+  const url = PROXY+encodeURIComponent(API+"?pageSize=500&pageNo=1");
 
- try{
-  const r=await fetch(url);
-  const j=await r.json();
-  const list=j.data.list;
+  try{
+    const res = await fetch(url);
+    const json = await res.json();
+    const list = json.data.list;
 
-  document.getElementById("period").textContent=
-   (BigInt(list[0].issueNumber)+1n).toString();
-
-  analyse(list);
-  startTimer(sec);
- }catch{
-  alert("API / Proxy issue");
- }
+    analyse(list,parseInt(sec));
+  }catch(e){
+    document.getElementById("runningPeriod").textContent="DATA ERROR";
+  }
 }
 
-function startTimer(sec){
- const now=Date.now();
- const base=sec*1000;
- let remain=base-(now%base);
- updateTimer(remain);
- setInterval(()=>{
-  remain-=1000;
-  updateTimer(remain);
- },1000);
+/* CORE ANALYSIS */
+function analyse(list,periodSec){
+  // running period = last closed
+  const running = list[0].issueNumber;
+  document.getElementById("runningPeriod").textContent = running;
+
+  // streams
+  const bs = list.map(r=>+r.number>=5?1:0);
+  const col = list.map(r=>{
+    if(r.color.includes("violet")) return 2;
+    return r.color.includes("green")?1:0;
+  });
+
+  // big/small metrics
+  const recent = bs.slice(0,50);
+  const long = bs.slice(0,300);
+
+  const trend = avg(long);
+  const recentTrend = avg(recent);
+  const exhaustion = Math.abs(recentTrend-trend);
+  const flips = flipRate(recent);
+  const volatility = stddev(recent);
+
+  let rawBias = (recentTrend-0.5) - exhaustion - flips*0.5 - volatility*0.3;
+  rawBias = clamp(rawBias,-0.5,0.5);
+
+  const bigPct = Math.round((0.5+rawBias)*100);
+  const smallPct = 100-bigPct;
+
+  document.getElementById("bsBias").textContent =
+    bigPct>smallPct?`Big ${bigPct}%`:`Small ${smallPct}%`;
+  document.getElementById("bsBar").style.width = bigPct+"%";
+
+  const bsFlip = clamp((exhaustion+flips+volatility)*100,10,80);
+  document.getElementById("bsFlip").textContent =
+    "Flip chance: "+Math.round(bsFlip)+"%";
+
+  // color
+  const cg = col.filter(v=>v===1).length/col.length;
+  const cr = col.filter(v=>v===0).length/col.length;
+  let colorBias = clamp(cg-cr,-0.4,0.4);
+  const greenPct = Math.round((0.5+colorBias)*100);
+  const redPct = 100-greenPct;
+
+  document.getElementById("colorBias").textContent =
+    greenPct>redPct?`Green ${greenPct}%`:`Red ${redPct}%`;
+  document.getElementById("colorBar").style.width = greenPct+"%";
+
+  const colorFlip = clamp(Math.abs(colorBias)*120,15,70);
+  document.getElementById("colorFlip").textContent =
+    "Flip chance: "+Math.round(colorFlip)+"%";
+
+  // MEMORY + MATCH/MISS
+  const actualBS = bs[0]?"Big":"Small";
+  if(memory.length>0){
+    memory[0].actual = actualBS;
+  }
+
+  memory.unshift({
+    period: running,
+    pred: bigPct>=50?"Big":"Small",
+    actual: "--"
+  });
+  memory = memory.slice(0,10);
+
+  renderTable();
+
+  // timer
+  alignTimer(periodSec);
 }
 
-function updateTimer(ms){
- document.getElementById("timer").textContent=
-  "Remaining: "+Math.max(0,Math.floor(ms/1000))+"s";
-}
-
-function analyse(list){
- let bsFlip=0, cFlip=0;
- let bsTrend=0, cTrend=0;
-
- for(let i=1;i<list.length;i++){
-  const a=+list[i-1].number>=5;
-  const b=+list[i].number>=5;
-  a!==b?bsFlip++:bsTrend++;
-
-  const ca=list[i-1].color.includes("green");
-  const cb=list[i].color.includes("green");
-  ca!==cb?cFlip++:cTrend++;
- }
-
- const bsBias = bsTrend/(bsTrend+bsFlip)*100;
- const cBias  = cTrend /(cTrend +cFlip )*100;
-
- renderBias("bigSmallBias","Big",bsBias,"Small",100-bsBias,bsFlip);
- renderBias("colorBias","Green",cBias,"Red",100-cBias,cFlip);
-
- renderPvA(list);
-}
-
-function renderBias(id,a,ap,b,bp,flip){
- document.getElementById(id).innerHTML=
-  `<div>${a} <span class="green">${ap.toFixed(1)}%</span> | 
-   ${b} <span class="red">${bp.toFixed(1)}%</span></div>
-   <div class="orange">Flip chance: ${(flip/(flip+10)*100).toFixed(1)}%</div>`;
-}
-
-function renderPvA(list){
- const box=document.getElementById("pvA");
- box.innerHTML="";
- for(let i=0;i<10;i++){
-  const n=+list[i].number;
-  const actual=n>=5?"Big":"Small";
-  const pred= lastPrediction[i] || "—";
-  const ok=pred===actual?"MATCH":"MISS";
-  box.innerHTML+=
-   `<div class="hist">
-     <span>${list[i].issueNumber.slice(-4)}</span>
-     <span>Pred: ${pred} | Act: ${actual} | ${ok}</span>
+/* TABLE */
+function renderTable(){
+  const t = document.getElementById("historyTable");
+  t.innerHTML = `
+    <div class="tr th">
+      <div>Period</div>
+      <div>Script BS</div>
+      <div>Actual BS</div>
+      <div>Result</div>
     </div>`;
- }
+  memory.forEach(r=>{
+    const ok = r.actual==="--"?"":(r.pred===r.actual);
+    t.innerHTML += `
+      <div class="tr">
+        <div>${r.period.slice(-5)}</div>
+        <div>${r.pred}</div>
+        <div>${r.actual}</div>
+        <div class="${ok?'match':'miss'}">
+          ${r.actual==="--"?"WAIT":(ok?"MATCH":"MISS")}
+        </div>
+      </div>`;
+  });
+}
+
+/* TIMER */
+function alignTimer(sec){
+  clearInterval(countdownTimer);
+  function tick(){
+    const now = Date.now();
+    const remain = sec*1000 - (now%(sec*1000));
+    document.getElementById("timer").textContent =
+      "Remaining: "+Math.ceil(remain/1000)+"s";
+  }
+  tick();
+  countdownTimer = setInterval(tick,1000);
+}
+
+/* MATH */
+function avg(a){return a.reduce((x,y)=>x+y,0)/a.length}
+function flipRate(a){
+  let f=0;
+  for(let i=1;i<a.length;i++) if(a[i]!==a[i-1]) f++;
+  return f/a.length;
+}
+function stddev(a){
+  const m=avg(a);
+  return Math.sqrt(avg(a.map(x=>(x-m)**2)));
 }
 
 loadData();
