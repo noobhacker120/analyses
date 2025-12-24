@@ -41,6 +41,19 @@ h3{margin:0 0 10px;font-size:15px}
 .hard{background:rgba(255,82,82,.15);color:#ff5252}
 .unknown{background:rgba(255,255,255,.1);color:#ccc}
 
+.history{
+ font-size:13px;
+ display:grid;
+ gap:6px
+}
+.hist-row{
+ display:flex;
+ justify-content:space-between;
+ background:rgba(0,0,0,.25);
+ padding:6px 8px;
+ border-radius:6px
+}
+
 footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
 </style>
 </head>
@@ -69,8 +82,19 @@ footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
 <div class="container">
 
  <div class="card">
+  <h3>Period Info</h3>
+  <div class="row"><span>Running Period</span><span id="currentPeriod">--</span></div>
+  <div class="row"><span>Next Period</span><span id="nextPeriod">--</span></div>
+ </div>
+
+ <div class="card">
   <h3>Risk Level</h3>
   <div id="riskBox" class="risk unknown">Waiting</div>
+ </div>
+
+ <div class="card">
+  <h3>Last 10 History</h3>
+  <div id="history" class="history">--</div>
  </div>
 
  <div class="card">
@@ -100,103 +124,78 @@ Observation only • Based on last 100 results • Credit: Noob Hacker
 </footer>
 
 <script>
-/* ===== CONFIG ===== */
-const API_30S = "https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json";
-const API_1M  = "https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
-const PROXY   = "https://signal.chat31525.workers.dev/?url=";
+/* CONFIG */
+const API_30S="https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json";
+const API_1M ="https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
+const PROXY  ="https://signal.chat31525.workers.dev/?url=";
 
-let refreshTimer = null;
-let countdownTimer = null;
+let refreshTimer,countdownTimer;
+document.getElementById("market").onchange=manualRefresh;
 
-document.getElementById("market").onchange = manualRefresh;
+function setDot(id,c){document.getElementById(id).className="dot "+c}
+function manualRefresh(){clearTimers();loadData()}
+function clearTimers(){clearTimeout(refreshTimer);clearInterval(countdownTimer)}
 
-/* ===== UTILS ===== */
-function setDot(id,color){
- document.getElementById(id).className = "dot " + color;
-}
-
-function manualRefresh(){
- clearTimers();
- loadData();
-}
-
-function clearTimers(){
- if(refreshTimer) clearTimeout(refreshTimer);
- if(countdownTimer) clearInterval(countdownTimer);
-}
-
-/* ===== MAIN LOAD ===== */
 async function loadData(){
- setDot("netDot", navigator.onLine ? "green" : "red");
- setDot("apiDot","gray");
- setDot("corsDot","gray");
+ setDot("netDot",navigator.onLine?"green":"red");
+ setDot("apiDot","gray");setDot("corsDot","gray");
 
- const market = document.getElementById("market").value;
- const API = market === "1" ? API_30S : API_1M;
-
- const target =
-   API + "?gameId=" + market + "&pageSize=100&pageNo=1";
+ const market=document.getElementById("market").value;
+ const API=market==="1"?API_30S:API_1M;
+ const target=API+"?gameId="+market+"&pageSize=100&pageNo=1";
 
  try{
-  const res = await fetch(PROXY + encodeURIComponent(target));
-  const json = await res.json();
+  const res=await fetch(PROXY+encodeURIComponent(target));
+  const json=await res.json();
+  if(json.code!==0||!json.data?.list?.length) throw "ERR";
 
-  if(json.code !== 0 || !json.data?.list?.length){
-   throw "BAD_DATA";
-  }
-
-  setDot("apiDot","green");
-  setDot("corsDot","green");
-
+  setDot("apiDot","green");setDot("corsDot","green");
   analyse(json.data.list);
   scheduleNext();
-
- }catch(e){
-  setDot("apiDot","red");
-  setDot("corsDot","red");
-  document.getElementById("riskBox").textContent = "DATA ERROR";
-  document.getElementById("riskBox").className = "risk unknown";
+ }catch{
+  setDot("apiDot","red");setDot("corsDot","red");
  }
 }
 
-/* ===== TIMER ===== */
 function scheduleNext(){
  clearTimers();
- const market = document.getElementById("market").value;
- const base = market === "1" ? 30000 : 60000;
- const delay = base - (Date.now() % base) + 5000;
-
+ const market=document.getElementById("market").value;
+ const base=market==="1"?30000:60000;
+ const delay=base-(Date.now()%base)+5000;
  startCountdown(delay);
- refreshTimer = setTimeout(loadData, delay);
+ refreshTimer=setTimeout(loadData,delay);
 }
 
 function startCountdown(ms){
- let s = Math.floor(ms / 1000);
- updateCountdown(s);
- countdownTimer = setInterval(()=>{
-  s--;
-  updateCountdown(s);
-  if(s <= 0) clearInterval(countdownTimer);
+ let s=Math.floor(ms/1000);
+ document.getElementById("countdown").textContent="Next refresh: "+s+"s";
+ countdownTimer=setInterval(()=>{
+  s--;document.getElementById("countdown").textContent="Next refresh: "+s+"s";
+  if(s<=0)clearInterval(countdownTimer);
  },1000);
 }
 
-function updateCountdown(s){
- document.getElementById("countdown").textContent =
-  "Next refresh: " + s + "s";
-}
-
-/* ===== ANALYSIS ===== */
 function analyse(list){
- let big=0, small=0;
- let color={g:0,r:0,v:0};
- let digit=Array(10).fill(0);
+ /* PERIOD */
+ const cur=list[0].issueNumber;
+ document.getElementById("currentPeriod").textContent=cur;
+ document.getElementById("nextPeriod").textContent=(BigInt(cur)+1n).toString();
+
+ /* HISTORY 10 */
+ document.getElementById("history").innerHTML=
+  list.slice(0,10).map(r=>
+   `<div class="hist-row">
+     <span>${r.issueNumber.slice(-5)}</span>
+     <span>${r.number} (${r.color})</span>
+    </div>`).join("");
+
+ let big=0,small=0,color={g:0,r:0,v:0},digit=Array(10).fill(0);
 
  list.forEach(r=>{
-  const n = +r.number;
-  n >= 5 ? big++ : small++;
-  if(n === 0 || n === 5) color.v++;
-  else if(n % 2) color.g++;
-  else color.r++;
+  const n=+r.number;
+  n>=5?big++:small++;
+  if(n===0||n===5)color.v++;
+  else if(n%2)color.g++;else color.r++;
   digit[n]++;
  });
 
@@ -208,29 +207,23 @@ function analyse(list){
 }
 
 function renderRisk(b,s,c,t){
- const diff = Math.abs(b-s)/t*100;
- const flip = Math.min(c.g,c.r)/t*100;
- const box = document.getElementById("riskBox");
-
- if(diff > 15 && flip < 25){
-  box.textContent="EASY"; box.className="risk easy";
- }else if(diff > 7){
-  box.textContent="NORMAL"; box.className="risk normal";
- }else{
-  box.textContent="HARD"; box.className="risk hard";
- }
+ const diff=Math.abs(b-s)/t*100;
+ const flip=Math.min(c.g,c.r)/t*100;
+ const box=document.getElementById("riskBox");
+ if(diff>15&&flip<25){box.textContent="EASY";box.className="risk easy"}
+ else if(diff>7){box.textContent="NORMAL";box.className="risk normal"}
+ else{box.textContent="HARD";box.className="risk hard"}
 }
 
 function renderTop3(d,t){
- const top = d.map((c,i)=>({i,p:c/t*100}))
-  .sort((a,b)=>b.p-a.p).slice(0,3);
-
- document.getElementById("top3").innerHTML =
-  top.map(x=>`Digit ${x.i} → ${x.p.toFixed(1)}%`).join("<br>");
+ document.getElementById("top3").innerHTML=
+  d.map((c,i)=>({i,p:c/t*100}))
+   .sort((a,b)=>b.p-a.p).slice(0,3)
+   .map(x=>`Digit ${x.i} → ${x.p.toFixed(1)}%`).join("<br>");
 }
 
 function renderBigSmall(b,s,t){
- document.getElementById("bigSmall").innerHTML =
+ document.getElementById("bigSmall").innerHTML=
   `<div class="row">Big ${(b/t*100).toFixed(1)}%</div>
    <div class="bar"><div class="fill" style="width:${b/t*100}%"></div></div>
    <div class="row">Small ${(s/t*100).toFixed(1)}%</div>
@@ -238,7 +231,7 @@ function renderBigSmall(b,s,t){
 }
 
 function renderColor(c,t){
- document.getElementById("colorProb").innerHTML =
+ document.getElementById("colorProb").innerHTML=
   `<div class="row">Green ${(c.g/t*100).toFixed(1)}%</div>
    <div class="bar"><div class="fill greenfill" style="width:${c.g/t*100}%"></div></div>
    <div class="row">Red ${(c.r/t*100).toFixed(1)}%</div>
@@ -248,15 +241,13 @@ function renderColor(c,t){
 }
 
 function renderDigit(d,t){
- document.getElementById("digitProb").innerHTML =
+ document.getElementById("digitProb").innerHTML=
   d.map((c,i)=>`<div class="row">Digit ${i} ${(c/t*100).toFixed(1)}%</div>
    <div class="bar"><div class="fill" style="width:${c/t*100}%"></div></div>`).join("");
 }
 
-/* ===== START ===== */
 loadData();
 </script>
 
 </body>
 </html>
-
