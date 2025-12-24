@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Noob Hacker – Probability Dashboard</title>
+<title>Noob Hacker – Complete Market Observer</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -19,9 +19,22 @@ select,button{
  background:#0d1a33;color:#fff;border:1px solid #2f4b8f;
  border-radius:8px;padding:6px 12px;cursor:pointer
 }
+
 .container{padding:14px;display:grid;gap:14px}
 .card{background:rgba(255,255,255,.06);border-radius:14px;padding:14px}
 h3{margin:0 0 10px;font-size:15px}
+.row{display:flex;justify-content:space-between;font-size:14px;margin:6px 0}
+
+.bar{height:8px;background:#222;border-radius:6px;overflow:hidden}
+.fill{height:100%;background:#4fa3ff}
+.greenfill{background:#4dff88}
+.redfill{background:#ff5252}
+.violetfill{background:#c77dff}
+
+.risk{text-align:center;font-size:20px;font-weight:700;padding:12px;border-radius:12px}
+.easy{background:rgba(77,255,136,.15);color:#4dff88}
+.normal{background:rgba(255,193,7,.15);color:#ffc107}
+.hard{background:rgba(255,82,82,.15);color:#ff5252}
 
 .history{font-size:13px;display:grid;gap:6px}
 .hist-row{
@@ -30,9 +43,8 @@ h3{margin:0 0 10px;font-size:15px}
  gap:6px;
  background:rgba(0,0,0,.25);
  padding:6px 8px;
- border-radius:8px
+ border-radius:6px
 }
-
 .ok{color:#4dff88;font-weight:600}
 .bad{color:#ff5252;font-weight:600}
 
@@ -43,7 +55,7 @@ footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
 <body>
 
 <header>
- <div class="title">Noob Hacker – Market Observation Dashboard</div>
+ <div class="title">Noob Hacker – Complete Market Observation</div>
  <div class="topbar">
   <select id="market">
    <option value="1">30 Second Market</option>
@@ -62,8 +74,33 @@ footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
  </div>
 
  <div class="card">
+  <h3>Risk Level</h3>
+  <div id="riskBox" class="risk">--</div>
+ </div>
+
+ <div class="card">
   <h3>Prediction vs Actual (Last 10)</h3>
   <div id="compareHistory" class="history">--</div>
+ </div>
+
+ <div class="card">
+  <h3>Top 3 Digit Probability</h3>
+  <div id="top3">--</div>
+ </div>
+
+ <div class="card">
+  <h3>Big / Small</h3>
+  <div id="bigSmall"></div>
+ </div>
+
+ <div class="card">
+  <h3>Color Probability</h3>
+  <div id="colorProb"></div>
+ </div>
+
+ <div class="card">
+  <h3>Digit Probability (0–9)</h3>
+  <div id="digitProb"></div>
  </div>
 
 </div>
@@ -117,11 +154,9 @@ function startCountdown(ms){
 }
 
 function analyse(list){
- // Running period
  document.getElementById("runningPeriod").textContent =
   (BigInt(list[0].issueNumber)+1n).toString();
 
- // Count stats
  let digit=Array(10).fill(0);
  let color={green:0,red:0,violet:0};
  let size={big:0,small:0};
@@ -129,41 +164,72 @@ function analyse(list){
  list.forEach(r=>{
   const n=+r.number;
   digit[n]++;
-  if(n>=5) size.big++; else size.small++;
-  if(n===0||n===5) color.violet++;
-  else if(n%2) color.green++;
-  else color.red++;
+  n>=5?size.big++:size.small++;
+  if(n===0||n===5)color.violet++;
+  else if(n%2)color.green++; else color.red++;
  });
 
- // Predictions
- const predDigit=digit.map((c,i)=>({i,c}))
-   .sort((a,b)=>b.c-a.c)[0].i;
- const predColor=Object.entries(color)
-   .sort((a,b)=>b[1]-a[1])[0][0];
- const predSize=Object.entries(size)
-   .sort((a,b)=>b[1]-a[1])[0][0];
+ const predDigit=digit.map((c,i)=>({i,c})).sort((a,b)=>b.c-a.c)[0].i;
+ const predColor=Object.entries(color).sort((a,b)=>b[1]-a[1])[0][0];
+ const predSize=Object.entries(size).sort((a,b)=>b[1]-a[1])[0][0];
 
- // Compare last 10
  document.getElementById("compareHistory").innerHTML =
   list.slice(0,10).map(r=>{
    const n=+r.number;
    const actSize=n>=5?"big":"small";
    const actColor=(n===0||n===5)?"violet":(n%2?"green":"red");
-
    return `
    <div class="hist-row">
     <span>P${r.issueNumber.slice(-4)}</span>
-    <span class="${n==predDigit?'ok':'bad'}">
-      Digit ${predDigit}/${n}
-    </span>
-    <span class="${actColor==predColor?'ok':'bad'}">
-      ${predColor}/${actColor}
-    </span>
-    <span class="${actSize==predSize?'ok':'bad'}">
-      ${predSize}/${actSize}
-    </span>
+    <span class="${n==predDigit?'ok':'bad'}">D ${predDigit}/${n}</span>
+    <span class="${actColor==predColor?'ok':'bad'}">C ${predColor}/${actColor}</span>
+    <span class="${actSize==predSize?'ok':'bad'}">S ${predSize}/${actSize}</span>
    </div>`;
   }).join("");
+
+ renderTop3(digit,list.length);
+ renderBigSmall(size,list.length);
+ renderColor(color,list.length);
+ renderDigit(digit,list.length);
+ renderRisk(size,list.length);
+}
+
+function renderRisk(size,t){
+ const diff=Math.abs(size.big-size.small)/t*100;
+ const box=document.getElementById("riskBox");
+ box.textContent=diff>15?"EASY":diff>7?"NORMAL":"HARD";
+ box.className="risk "+(diff>15?"easy":diff>7?"normal":"hard");
+}
+
+function renderTop3(d,t){
+ document.getElementById("top3").innerHTML=
+  d.map((c,i)=>({i,p:c/t*100}))
+   .sort((a,b)=>b.p-a.p).slice(0,3)
+   .map(x=>`Digit ${x.i} → ${x.p.toFixed(1)}%`).join("<br>");
+}
+
+function renderBigSmall(size,t){
+ document.getElementById("bigSmall").innerHTML=
+  `<div class="row">Big ${(size.big/t*100).toFixed(1)}%</div>
+   <div class="bar"><div class="fill" style="width:${size.big/t*100}%"></div></div>
+   <div class="row">Small ${(size.small/t*100).toFixed(1)}%</div>
+   <div class="bar"><div class="fill" style="width:${size.small/t*100}%"></div></div>`;
+}
+
+function renderColor(c,t){
+ document.getElementById("colorProb").innerHTML=
+  `<div class="row">Green ${(c.green/t*100).toFixed(1)}%</div>
+   <div class="bar"><div class="fill greenfill" style="width:${c.green/t*100}%"></div></div>
+   <div class="row">Red ${(c.red/t*100).toFixed(1)}%</div>
+   <div class="bar"><div class="fill redfill" style="width:${c.red/t*100}%"></div></div>
+   <div class="row">Violet ${(c.violet/t*100).toFixed(1)}%</div>
+   <div class="bar"><div class="fill violetfill" style="width:${c.violet/t*100}%"></div></div>`;
+}
+
+function renderDigit(d,t){
+ document.getElementById("digitProb").innerHTML=
+  d.map((c,i)=>`<div class="row">Digit ${i} ${(c/t*100).toFixed(1)}%</div>
+   <div class="bar"><div class="fill" style="width:${c/t*100}%"></div></div>`).join("");
 }
 
 loadData();
