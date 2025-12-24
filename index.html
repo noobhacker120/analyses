@@ -12,25 +12,65 @@ body{
  background:radial-gradient(circle at top,#1b2a40,#050712 70%);
  color:#eaf1ff;
 }
-header{padding:14px;border-bottom:1px solid rgba(255,255,255,.08)}
-.title{font-size:18px;font-weight:600;margin-bottom:8px}
-.topbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
-select,button{
- background:#0d1a33;color:#fff;border:1px solid #2f4b8f;
- border-radius:8px;padding:6px 12px;cursor:pointer
+header{
+ padding:14px;
+ border-bottom:1px solid rgba(255,255,255,.08)
 }
-.container{padding:14px;display:grid;gap:14px}
-.card{background:rgba(255,255,255,.06);border-radius:14px;padding:14px}
-h3{margin:0 0 10px;font-size:15px}
-.row{display:flex;justify-content:space-between;font-size:14px;margin:6px 0}
+.title{
+ font-size:18px;
+ font-weight:600;
+ margin-bottom:8px
+}
+.topbar{
+ display:flex;
+ flex-wrap:wrap;
+ gap:10px;
+ align-items:center;
+ justify-content:space-between
+}
+select,button{
+ background:#0d1a33;
+ color:#fff;
+ border:1px solid #2f4b8f;
+ border-radius:8px;
+ padding:6px 12px;
+ cursor:pointer
+}
+
+.container{
+ padding:14px;
+ display:grid;
+ gap:14px
+}
+.card{
+ background:rgba(255,255,255,.06);
+ border-radius:14px;
+ padding:14px
+}
+h3{
+ margin:0 0 10px;
+ font-size:15px
+}
+.row{
+ display:flex;
+ justify-content:space-between;
+ font-size:14px;
+ margin:6px 0
+}
 
 .badge{
- padding:2px 8px;
+ padding:3px 8px;
  border-radius:6px;
  font-size:12px
 }
-.win{background:rgba(77,255,136,.2);color:#4dff88}
-.lose{background:rgba(255,82,82,.2);color:#ff5252}
+.win{
+ background:rgba(77,255,136,.2);
+ color:#4dff88
+}
+.lose{
+ background:rgba(255,82,82,.2);
+ color:#ff5252
+}
 
 .history{
  display:grid;
@@ -45,14 +85,20 @@ h3{margin:0 0 10px;font-size:15px}
  padding:6px 8px;
  border-radius:8px
 }
-footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
+
+footer{
+ text-align:center;
+ font-size:12px;
+ opacity:.6;
+ margin:14px
+}
 </style>
 </head>
 
 <body>
 
 <header>
- <div class="title">Noob Hacker – Smart Market Observer</div>
+ <div class="title">Noob Hacker – Smart Market Observation</div>
  <div class="topbar">
   <select id="market">
    <option value="1">30 Second Market</option>
@@ -74,65 +120,105 @@ footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
  </div>
 
  <div class="card">
-  <h3>Top Predicted Digit (Now)</h3>
+  <h3>Current Prediction (Observation)</h3>
   <div id="currentPrediction">--</div>
  </div>
 
  <div class="card">
   <h3>Prediction vs Actual (Last 10)</h3>
-  <div class="history" id="compareHistory"></div>
+  <div class="history" id="compareHistory">--</div>
  </div>
 
 </div>
 
 <footer>
-Observation tool only • Learn market behaviour • Credit: Noob Hacker
+Observation tool only • No guarantee • Learn market behaviour  
+<br>Credit: Noob Hacker
 </footer>
 
 <script>
-const API_30S="https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json";
-const API_1M ="https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
-const PROXY  ="https://signal.chat31525.workers.dev/?url=";
+/* ================= CONFIG ================= */
+const API_30S =
+ "https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json";
+const API_1M =
+ "https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
 
-let lastPrediction=null;
+/* Cloudflare Worker / proxy */
+const PROXY =
+ "https://signal.chat31525.workers.dev/?url=";
 
+/* ========================================== */
+
+let countdownTimer=null;
+
+/* Load data */
 async function loadData(){
+ clearInterval(countdownTimer);
+
  const market=document.getElementById("market").value;
  const API=market==="1"?API_30S:API_1M;
- const url=PROXY+encodeURIComponent(API+"?gameId="+market+"&pageSize=20&pageNo=1");
+ const url=PROXY+encodeURIComponent(
+  API+"?gameId="+market+"&pageSize=20&pageNo=1"
+ );
 
- const res=await fetch(url);
- const json=await res.json();
- const list=json.data.list;
+ try{
+  const res=await fetch(url,{cache:"no-store"});
+  const json=await res.json();
+  const list=json.data.list;
 
- // running period
- document.getElementById("runningPeriod").textContent =
-  (BigInt(list[0].issueNumber)+1n).toString();
+  /* RUNNING PERIOD = last closed + 1 */
+  document.getElementById("runningPeriod").textContent =
+   (BigInt(list[0].issueNumber)+1n).toString();
 
- // digit frequency
- let digit=Array(10).fill(0);
- list.forEach(r=>digit[+r.number]++);
+  /* DIGIT FREQUENCY */
+  let digit=Array(10).fill(0);
+  list.forEach(r=>digit[+r.number]++);
 
- // top predicted digit
- const top=digit.map((c,i)=>({i,c}))
-                .sort((a,b)=>b.c-a.c)[0];
- lastPrediction=top.i;
- document.getElementById("currentPrediction").textContent =
-  `Digit ${top.i} (based on last data)`;
+  /* TOP PREDICTED DIGIT */
+  const top=digit
+   .map((c,i)=>({i,c}))
+   .sort((a,b)=>b.c-a.c)[0];
 
- // compare history
- document.getElementById("compareHistory").innerHTML =
-  list.slice(0,10).map((r,idx)=>{
-   const actual=r.number;
-   const match= actual==lastPrediction;
-   return `<div class="hist-row">
-     <span>P${r.issueNumber.slice(-4)}</span>
-     <span>Pred: ${lastPrediction}</span>
-     <span class="badge ${match?'win':'lose'}">
+  document.getElementById("currentPrediction").textContent =
+   `Digit ${top.i} (highest frequency in recent data)`;
+
+  /* PREDICTION vs ACTUAL (LAST 10) */
+  document.getElementById("compareHistory").innerHTML =
+   list.slice(0,10).map(r=>{
+    const actual=r.number;
+    const match=actual==top.i;
+    return `
+     <div class="hist-row">
+      <span>P${r.issueNumber.slice(-4)}</span>
+      <span>Pred: ${top.i}</span>
+      <span class="badge ${match?'win':'lose'}">
        ${match?'MATCH':'MISS'} (${actual})
-     </span>
-   </div>`;
-  }).join("");
+      </span>
+     </div>`;
+   }).join("");
+
+  startCountdown(market==="1"?35:65);
+
+ }catch(e){
+  document.getElementById("compareHistory").innerHTML =
+   "Data load failed";
+ }
+}
+
+/* Countdown */
+function startCountdown(sec){
+ let s=sec;
+ document.getElementById("countdown").textContent =
+  "Auto refresh in "+s+"s";
+ countdownTimer=setInterval(()=>{
+  s--;
+  document.getElementById("countdown").textContent =
+   "Auto refresh in "+s+"s";
+  if(s<=0){
+   clearInterval(countdownTimer);
+   loadData();
+  }
+ },1000);
 }
 
 loadData();
