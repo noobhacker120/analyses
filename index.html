@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Noob Hacker – Complete Market Dashboard</title>
+<title>Noob Hacker – Pattern Bias Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -16,17 +16,13 @@ header{
  padding:14px;
  border-bottom:1px solid rgba(255,255,255,.08)
 }
-.title{
- font-size:18px;
- font-weight:600;
- margin-bottom:8px
-}
+.title{font-size:18px;font-weight:600;margin-bottom:8px}
 .topbar{
  display:flex;
  flex-wrap:wrap;
  gap:10px;
- align-items:center;
- justify-content:space-between
+ justify-content:space-between;
+ align-items:center
 }
 select,button{
  background:#0d1a33;
@@ -46,18 +42,13 @@ select,button{
  border-radius:14px;
  padding:14px
 }
-h3{
- margin:0 0 10px;
- font-size:15px
-}
-
+h3{margin:0 0 10px;font-size:15px}
 .row{
  display:flex;
  justify-content:space-between;
- font-size:14px;
- margin:6px 0
+ margin:6px 0;
+ font-size:14px
 }
-
 .bar{
  height:8px;
  background:#222;
@@ -65,57 +56,27 @@ h3{
  overflow:hidden
 }
 .fill{height:100%;background:#4fa3ff}
-.greenfill{background:#4dff88}
-.redfill{background:#ff5252}
-.violetfill{background:#c77dff}
+.green{color:#4dff88}
+.red{color:#ff5252}
+.orange{color:#ffb74d}
 
-.risk{
+.biasBox{
  text-align:center;
- font-size:20px;
- font-weight:700;
- padding:12px;
- border-radius:12px
+ font-size:18px;
+ font-weight:700
 }
-.easy{background:rgba(77,255,136,.15);color:#4dff88}
-.normal{background:rgba(255,193,7,.15);color:#ffc107}
-.hard{background:rgba(255,82,82,.15);color:#ff5252}
 
 .history{
- font-size:13px;
  display:grid;
- gap:6px
-}
-.hist{
- display:flex;
- justify-content:space-between;
- background:rgba(0,0,0,.25);
- padding:6px 8px;
- border-radius:6px
-}
-
-table{
- width:100%;
- border-collapse:collapse;
+ gap:6px;
  font-size:13px
 }
-th,td{
- padding:6px;
- text-align:center
-}
-th{
- background:rgba(255,255,255,.08)
-}
-tr:nth-child(even){
- background:rgba(0,0,0,.25)
-}
-.match{color:#4dff88;font-weight:600}
-.miss{color:#ff5252;font-weight:600}
-
-.legend{
- font-size:12px;
- opacity:.8;
- line-height:1.6;
- margin-top:8px
+.hist{
+ background:rgba(0,0,0,.25);
+ padding:6px 8px;
+ border-radius:6px;
+ display:flex;
+ justify-content:space-between
 }
 
 footer{
@@ -130,194 +91,137 @@ footer{
 <body>
 
 <header>
- <div class="title">Noob Hacker – Complete Market Observation</div>
+ <div class="title">Noob Hacker – Pattern Bias Dashboard</div>
  <div class="topbar">
   <select id="market">
-   <option value="1">30 Second Market</option>
-   <option value="2">1 Minute Market</option>
+   <option value="30">30 Second</option>
+   <option value="60">1 Minute</option>
   </select>
-  <button onclick="manualRefresh()">Manual Refresh</button>
-  <div id="countdown">Next refresh: --</div>
+  <button onclick="manualRefresh()">Refresh</button>
+  <div id="timer">--</div>
  </div>
 </header>
 
 <div class="container">
 
-<div class="card">
- <h3>Running Period</h3>
- <div id="runningPeriod">--</div>
-</div>
-
-<div class="card">
- <h3>Risk Level</h3>
- <div id="riskBox" class="risk">--</div>
-</div>
-
-<div class="card">
- <h3>Last 10 History</h3>
- <div id="history" class="history">--</div>
-</div>
-
-<div class="card">
- <h3>Prediction vs Actual (Last 10)</h3>
- <table>
-  <thead>
-   <tr>
-    <th>Period</th>
-    <th>Digit<br>(Pred / Act)</th>
-    <th>Color<br>(Pred / Act)</th>
-    <th>Size<br>(Pred / Act)</th>
-   </tr>
-  </thead>
-  <tbody id="pva"></tbody>
- </table>
-
- <div class="legend">
-  <b>Legend:</b><br>
-  Pred = Probability-based observation<br>
-  Act = Actual market result<br>
-  Green = MATCH | Red = MISS
+ <div class="card">
+  <h3>Running Period</h3>
+  <div class="row">
+   <span>Current</span>
+   <span id="period">--</span>
+  </div>
  </div>
-</div>
 
-<div class="card">
- <h3>Top 3 Digit Probability</h3>
- <div id="top3">--</div>
-</div>
+ <div class="card">
+  <h3>Big / Small Bias</h3>
+  <div id="bigSmallBias" class="biasBox">--</div>
+ </div>
 
-<div class="card">
- <h3>Big / Small Probability</h3>
- <div id="bigSmall"></div>
-</div>
+ <div class="card">
+  <h3>Green / Red Bias</h3>
+  <div id="colorBias" class="biasBox">--</div>
+ </div>
 
-<div class="card">
- <h3>Color Probability</h3>
- <div id="colorProb"></div>
-</div>
+ <div class="card">
+  <h3>Prediction vs Actual (Last 10)</h3>
+  <div id="pvA" class="history">--</div>
+ </div>
 
 </div>
 
 <footer>
-Learning & Observation Only • No Prediction Guarantee • Credit: Noob Hacker
+Pattern-based bias • Uses last 500 history • Credit: Noob Hacker
 </footer>
 
 <script>
-const API_30S="https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json";
-const API_1M ="https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
+const API_30="https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json";
+const API_60="https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
 const PROXY="https://signal.chat31525.workers.dev/?url=";
 
-let refreshTimer,countdownTimer;
-document.getElementById("market").onchange=manualRefresh;
+let lastPrediction=[];
 
-function manualRefresh(){
- clearTimeout(refreshTimer);
- clearInterval(countdownTimer);
- loadData();
-}
+function manualRefresh(){loadData()}
 
 async function loadData(){
- const market=document.getElementById("market").value;
- const API=market==="1"?API_30S:API_1M;
- const url=PROXY+encodeURIComponent(API+"?pageSize=100&pageNo=1");
+ const sec=document.getElementById("market").value;
+ const API=sec==="30"?API_30:API_60;
+ const url=PROXY+encodeURIComponent(API+"?pageSize=500&pageNo=1");
 
- const res=await fetch(url);
- const json=await res.json();
- const list=json.data.list;
+ try{
+  const r=await fetch(url);
+  const j=await r.json();
+  const list=j.data.list;
 
- document.getElementById("runningPeriod").textContent =
-  (BigInt(list[0].issueNumber)+1n).toString();
+  document.getElementById("period").textContent=
+   (BigInt(list[0].issueNumber)+1n).toString();
 
- analyse(list);
- scheduleNext();
+  analyse(list);
+  startTimer(sec);
+ }catch{
+  alert("API / Proxy issue");
+ }
 }
 
-function scheduleNext(){
- const market=document.getElementById("market").value;
- const base=market==="1"?30000:60000;
- const delay=base-(Date.now()%base);
- let s=Math.floor(delay/1000);
-
- document.getElementById("countdown").textContent="Next refresh: "+s+"s";
- countdownTimer=setInterval(()=>{
-  s--;
-  document.getElementById("countdown").textContent="Next refresh: "+s+"s";
-  if(s<=0)clearInterval(countdownTimer);
+function startTimer(sec){
+ const now=Date.now();
+ const base=sec*1000;
+ let remain=base-(now%base);
+ updateTimer(remain);
+ setInterval(()=>{
+  remain-=1000;
+  updateTimer(remain);
  },1000);
+}
 
- refreshTimer=setTimeout(loadData,delay);
+function updateTimer(ms){
+ document.getElementById("timer").textContent=
+  "Remaining: "+Math.max(0,Math.floor(ms/1000))+"s";
 }
 
 function analyse(list){
- // Last 10 history
- document.getElementById("history").innerHTML=
-  list.slice(0,10).map(r=>
+ let bsFlip=0, cFlip=0;
+ let bsTrend=0, cTrend=0;
+
+ for(let i=1;i<list.length;i++){
+  const a=+list[i-1].number>=5;
+  const b=+list[i].number>=5;
+  a!==b?bsFlip++:bsTrend++;
+
+  const ca=list[i-1].color.includes("green");
+  const cb=list[i].color.includes("green");
+  ca!==cb?cFlip++:cTrend++;
+ }
+
+ const bsBias = bsTrend/(bsTrend+bsFlip)*100;
+ const cBias  = cTrend /(cTrend +cFlip )*100;
+
+ renderBias("bigSmallBias","Big",bsBias,"Small",100-bsBias,bsFlip);
+ renderBias("colorBias","Green",cBias,"Red",100-cBias,cFlip);
+
+ renderPvA(list);
+}
+
+function renderBias(id,a,ap,b,bp,flip){
+ document.getElementById(id).innerHTML=
+  `<div>${a} <span class="green">${ap.toFixed(1)}%</span> | 
+   ${b} <span class="red">${bp.toFixed(1)}%</span></div>
+   <div class="orange">Flip chance: ${(flip/(flip+10)*100).toFixed(1)}%</div>`;
+}
+
+function renderPvA(list){
+ const box=document.getElementById("pvA");
+ box.innerHTML="";
+ for(let i=0;i<10;i++){
+  const n=+list[i].number;
+  const actual=n>=5?"Big":"Small";
+  const pred= lastPrediction[i] || "—";
+  const ok=pred===actual?"MATCH":"MISS";
+  box.innerHTML+=
    `<div class="hist">
-     <span>${r.issueNumber.slice(-4)}</span>
-     <span>${r.number} (${r.color})</span>
-    </div>`).join("");
-
- let digitCount=Array(10).fill(0);
- let big=0,small=0,color={g:0,r:0,v:0};
-
- list.forEach(r=>{
-  const n=+r.number;
-  digitCount[n]++;
-  n>=5?big++:small++;
-  if(n===0||n===5)color.v++;
-  else if(n%2)color.g++; else color.r++;
- });
-
- // ✅ CORRECT prediction logic
- const predDigit=digitCount.indexOf(Math.max(...digitCount));
- const predColor=color.v>=Math.max(color.g,color.r)
-  ?"violet":color.g>=color.r?"green":"red";
- const predSize=big>=small?"big":"small";
-
- // Prediction vs Actual table
- document.getElementById("pva").innerHTML=
-  list.slice(0,10).map(r=>{
-   const d=+r.number;
-   const dMatch=d===predDigit;
-   const cAct=r.color.includes("violet")?"violet":r.color;
-   const cMatch=cAct===predColor;
-   const sAct=d>=5?"big":"small";
-   const sMatch=sAct===predSize;
-
-   return `<tr>
-    <td>${r.issueNumber.slice(-4)}</td>
-    <td class="${dMatch?"match":"miss"}">${predDigit} / ${d}</td>
-    <td class="${cMatch?"match":"miss"}">${predColor} / ${cAct}</td>
-    <td class="${sMatch?"match":"miss"}">${predSize} / ${sAct}</td>
-   </tr>`;
-  }).join("");
-
- // Risk Level
- const diff=Math.abs(big-small);
- const box=document.getElementById("riskBox");
- box.textContent=diff>10?"EASY":diff>5?"NORMAL":"HARD";
- box.className="risk "+(diff>10?"easy":diff>5?"normal":"hard");
-
- // Top 3 digits
- document.getElementById("top3").innerHTML=
-  digitCount.map((c,i)=>({i,p:c/list.length*100}))
-   .sort((a,b)=>b.p-a.p).slice(0,3)
-   .map(x=>`Digit ${x.i} → ${x.p.toFixed(1)}%`).join("<br>");
-
- // Big / Small %
- document.getElementById("bigSmall").innerHTML=
-  `Big ${(big/list.length*100).toFixed(1)}%
-   <div class="bar"><div class="fill" style="width:${big/list.length*100}%"></div></div>
-   Small ${(small/list.length*100).toFixed(1)}%
-   <div class="bar"><div class="fill" style="width:${small/list.length*100}%"></div></div>`;
-
- // Color %
- document.getElementById("colorProb").innerHTML=
-  `Green ${(color.g/list.length*100).toFixed(1)}%
-   <div class="bar"><div class="fill greenfill" style="width:${color.g/list.length*100}%"></div></div>
-   Red ${(color.r/list.length*100).toFixed(1)}%
-   <div class="bar"><div class="fill redfill" style="width:${color.r/list.length*100}%"></div></div>
-   Violet ${(color.v/list.length*100).toFixed(1)}%
-   <div class="bar"><div class="fill violetfill" style="width:${color.v/list.length*100}%"></div></div>`;
+     <span>${list[i].issueNumber.slice(-4)}</span>
+     <span>Pred: ${pred} | Act: ${actual} | ${ok}</span>
+    </div>`;
+ }
 }
 
 loadData();
