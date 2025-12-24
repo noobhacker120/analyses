@@ -19,22 +19,9 @@ select,button{
  background:#0d1a33;color:#fff;border:1px solid #2f4b8f;
  border-radius:8px;padding:6px 12px;cursor:pointer
 }
-
 .container{padding:14px;display:grid;gap:14px}
 .card{background:rgba(255,255,255,.06);border-radius:14px;padding:14px}
 h3{margin:0 0 10px;font-size:15px}
-.row{display:flex;justify-content:space-between;font-size:14px;margin:6px 0}
-
-.bar{height:8px;background:#222;border-radius:6px;overflow:hidden}
-.fill{height:100%;background:#4fa3ff}
-.greenfill{background:#4dff88}
-.redfill{background:#ff5252}
-.violetfill{background:#c77dff}
-
-.risk{text-align:center;font-size:20px;font-weight:700;padding:12px;border-radius:12px}
-.easy{background:rgba(77,255,136,.15);color:#4dff88}
-.normal{background:rgba(255,193,7,.15);color:#ffc107}
-.hard{background:rgba(255,82,82,.15);color:#ff5252}
 
 .history{font-size:13px;display:grid;gap:6px}
 .hist-row{
@@ -43,10 +30,11 @@ h3{margin:0 0 10px;font-size:15px}
  gap:6px;
  background:rgba(0,0,0,.25);
  padding:6px 8px;
- border-radius:6px
+ border-radius:8px
 }
-.match{color:#4dff88;font-weight:600}
-.miss{color:#ff5252;font-weight:600}
+
+.ok{color:#4dff88;font-weight:600}
+.bad{color:#ff5252;font-weight:600}
 
 footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
 </style>
@@ -55,14 +43,14 @@ footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
 <body>
 
 <header>
- <div class="title">Noob Hacker – Market Probability Dashboard</div>
+ <div class="title">Noob Hacker – Market Observation Dashboard</div>
  <div class="topbar">
   <select id="market">
    <option value="1">30 Second Market</option>
    <option value="2">1 Minute Market</option>
   </select>
   <button onclick="manualRefresh()">Manual Refresh</button>
-  <div id="countdown">Next refresh: --</div>
+  <div id="countdown">--</div>
  </div>
 </header>
 
@@ -70,40 +58,12 @@ footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
 
  <div class="card">
   <h3>Running Period</h3>
-  <div class="row">
-   <span>Current</span>
-   <span id="runningPeriod">--</span>
-  </div>
- </div>
-
- <div class="card">
-  <h3>Risk Level</h3>
-  <div id="riskBox" class="risk">--</div>
+  <div id="runningPeriod">--</div>
  </div>
 
  <div class="card">
   <h3>Prediction vs Actual (Last 10)</h3>
   <div id="compareHistory" class="history">--</div>
- </div>
-
- <div class="card">
-  <h3>Top 3 Digit Probability</h3>
-  <div id="top3">--</div>
- </div>
-
- <div class="card">
-  <h3>Big / Small</h3>
-  <div id="bigSmall"></div>
- </div>
-
- <div class="card">
-  <h3>Color Probability</h3>
-  <div id="colorProb"></div>
- </div>
-
- <div class="card">
-  <h3>Digit Probability (0–9)</h3>
-  <div id="digitProb"></div>
  </div>
 
 </div>
@@ -118,10 +78,13 @@ const API_1M ="https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.
 const PROXY  ="https://signal.chat31525.workers.dev/?url=";
 
 let refreshTimer,countdownTimer;
-
 document.getElementById("market").onchange=manualRefresh;
-function manualRefresh(){clearTimers();loadData()}
-function clearTimers(){clearTimeout(refreshTimer);clearInterval(countdownTimer)}
+
+function manualRefresh(){
+ clearTimeout(refreshTimer);
+ clearInterval(countdownTimer);
+ loadData();
+}
 
 async function loadData(){
  const market=document.getElementById("market").value;
@@ -137,9 +100,7 @@ async function loadData(){
 }
 
 function scheduleNext(){
- clearTimers();
- const market=document.getElementById("market").value;
- const base=market==="1"?30000:60000;
+ const base=document.getElementById("market").value==="1"?30000:60000;
  const delay=base-(Date.now()%base)+5000;
  startCountdown(delay);
  refreshTimer=setTimeout(loadData,delay);
@@ -156,88 +117,53 @@ function startCountdown(ms){
 }
 
 function analyse(list){
- /* Running Period */
+ // Running period
  document.getElementById("runningPeriod").textContent =
   (BigInt(list[0].issueNumber)+1n).toString();
 
- /* Digit count */
+ // Count stats
  let digit=Array(10).fill(0);
- let big=0,small=0,color={g:0,r:0,v:0};
+ let color={green:0,red:0,violet:0};
+ let size={big:0,small:0};
 
  list.forEach(r=>{
   const n=+r.number;
   digit[n]++;
-  n>=5?big++:small++;
-  if(n===0||n===5)color.v++;
-  else if(n%2)color.g++; else color.r++;
+  if(n>=5) size.big++; else size.small++;
+  if(n===0||n===5) color.violet++;
+  else if(n%2) color.green++;
+  else color.red++;
  });
 
- /* Prediction = highest frequency digit */
- const prediction=digit
-  .map((c,i)=>({i,c}))
-  .sort((a,b)=>b.c-a.c)[0].i;
+ // Predictions
+ const predDigit=digit.map((c,i)=>({i,c}))
+   .sort((a,b)=>b.c-a.c)[0].i;
+ const predColor=Object.entries(color)
+   .sort((a,b)=>b[1]-a[1])[0][0];
+ const predSize=Object.entries(size)
+   .sort((a,b)=>b[1]-a[1])[0][0];
 
- /* Prediction vs Actual */
+ // Compare last 10
  document.getElementById("compareHistory").innerHTML =
   list.slice(0,10).map(r=>{
-   const actual=r.number;
-   const ok=actual==prediction;
+   const n=+r.number;
+   const actSize=n>=5?"big":"small";
+   const actColor=(n===0||n===5)?"violet":(n%2?"green":"red");
+
    return `
-    <div class="hist-row">
-     <span>${r.issueNumber.slice(-4)}</span>
-     <span>Pred ${prediction}</span>
-     <span>Actual ${actual}</span>
-     <span class="${ok?'match':'miss'}">
-      ${ok?'MATCH':'MISS'}
-     </span>
-    </div>`;
+   <div class="hist-row">
+    <span>P${r.issueNumber.slice(-4)}</span>
+    <span class="${n==predDigit?'ok':'bad'}">
+      Digit ${predDigit}/${n}
+    </span>
+    <span class="${actColor==predColor?'ok':'bad'}">
+      ${predColor}/${actColor}
+    </span>
+    <span class="${actSize==predSize?'ok':'bad'}">
+      ${predSize}/${actSize}
+    </span>
+   </div>`;
   }).join("");
-
- renderTop3(digit,list.length);
- renderBigSmall(big,small,list.length);
- renderColor(color,list.length);
- renderDigit(digit,list.length);
- renderRisk(big,small,color,list.length);
-}
-
-function renderRisk(b,s,c,t){
- const diff=Math.abs(b-s)/t*100;
- const flip=Math.min(c.g,c.r)/t*100;
- const box=document.getElementById("riskBox");
- if(diff>15&&flip<25){box.textContent="EASY";box.className="risk easy"}
- else if(diff>7){box.textContent="NORMAL";box.className="risk normal"}
- else{box.textContent="HARD";box.className="risk hard"}
-}
-
-function renderTop3(d,t){
- document.getElementById("top3").innerHTML=
-  d.map((c,i)=>({i,p:c/t*100}))
-   .sort((a,b)=>b.p-a.p).slice(0,3)
-   .map(x=>`Digit ${x.i} → ${x.p.toFixed(1)}%`).join("<br>");
-}
-
-function renderBigSmall(b,s,t){
- document.getElementById("bigSmall").innerHTML=
-  `<div class="row">Big ${(b/t*100).toFixed(1)}%</div>
-   <div class="bar"><div class="fill" style="width:${b/t*100}%"></div></div>
-   <div class="row">Small ${(s/t*100).toFixed(1)}%</div>
-   <div class="bar"><div class="fill" style="width:${s/t*100}%"></div></div>`;
-}
-
-function renderColor(c,t){
- document.getElementById("colorProb").innerHTML=
-  `<div class="row">Green ${(c.g/t*100).toFixed(1)}%</div>
-   <div class="bar"><div class="fill greenfill" style="width:${c.g/t*100}%"></div></div>
-   <div class="row">Red ${(c.r/t*100).toFixed(1)}%</div>
-   <div class="bar"><div class="fill redfill" style="width:${c.r/t*100}%"></div></div>
-   <div class="row">Violet ${(c.v/t*100).toFixed(1)}%</div>
-   <div class="bar"><div class="fill violetfill" style="width:${c.v/t*100}%"></div></div>`;
-}
-
-function renderDigit(d,t){
- document.getElementById("digitProb").innerHTML=
-  d.map((c,i)=>`<div class="row">Digit ${i} ${(c/t*100).toFixed(1)}%</div>
-   <div class="bar"><div class="fill" style="width:${c/t*100}%"></div></div>`).join("");
 }
 
 loadData();
