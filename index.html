@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Noob Hacker – Complete Market Observation</title>
+<title>Noob Hacker – Complete Market Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -12,35 +12,62 @@ body{
  background:radial-gradient(circle at top,#1b2a40,#050712 70%);
  color:#eaf1ff;
 }
-header{padding:14px;border-bottom:1px solid rgba(255,255,255,.08)}
-.title{font-size:18px;font-weight:600;margin-bottom:8px}
-.topbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+header{
+ padding:14px;
+ border-bottom:1px solid rgba(255,255,255,.08)
+}
+.title{
+ font-size:18px;
+ font-weight:600;
+ margin-bottom:8px
+}
+.topbar{
+ display:flex;
+ flex-wrap:wrap;
+ gap:10px;
+ align-items:center;
+ justify-content:space-between
+}
 select,button{
- background:#0d1a33;color:#fff;border:1px solid #2f4b8f;
- border-radius:8px;padding:6px 12px;cursor:pointer
+ background:#0d1a33;
+ color:#fff;
+ border:1px solid #2f4b8f;
+ border-radius:8px;
+ padding:6px 12px;
+ cursor:pointer
 }
-.container{padding:14px;display:grid;gap:14px}
-.card{background:rgba(255,255,255,.06);border-radius:14px;padding:14px}
-h3{margin:0 0 10px;font-size:15px}
+.container{
+ padding:14px;
+ display:grid;
+ gap:14px
+}
+.card{
+ background:rgba(255,255,255,.06);
+ border-radius:14px;
+ padding:14px
+}
+h3{
+ margin:0 0 10px;
+ font-size:15px
+}
 
-table{
- width:100%;
- border-collapse:collapse;
- font-size:13px
+.row{
+ display:flex;
+ justify-content:space-between;
+ font-size:14px;
+ margin:6px 0
 }
-th,td{
- padding:6px;
- text-align:center
+
+.bar{
+ height:8px;
+ background:#222;
+ border-radius:6px;
+ overflow:hidden
 }
-th{
- background:rgba(255,255,255,.08);
- font-weight:600
-}
-tr:nth-child(even){
- background:rgba(0,0,0,.25)
-}
-.match{color:#4dff88;font-weight:600}
-.miss{color:#ff5252;font-weight:600}
+.fill{height:100%;background:#4fa3ff}
+.greenfill{background:#4dff88}
+.redfill{background:#ff5252}
+.violetfill{background:#c77dff}
 
 .risk{
  text-align:center;
@@ -53,13 +80,50 @@ tr:nth-child(even){
 .normal{background:rgba(255,193,7,.15);color:#ffc107}
 .hard{background:rgba(255,82,82,.15);color:#ff5252}
 
+.history{
+ font-size:13px;
+ display:grid;
+ gap:6px
+}
+.hist{
+ display:flex;
+ justify-content:space-between;
+ background:rgba(0,0,0,.25);
+ padding:6px 8px;
+ border-radius:6px
+}
+
+table{
+ width:100%;
+ border-collapse:collapse;
+ font-size:13px
+}
+th,td{
+ padding:6px;
+ text-align:center
+}
+th{
+ background:rgba(255,255,255,.08)
+}
+tr:nth-child(even){
+ background:rgba(0,0,0,.25)
+}
+.match{color:#4dff88;font-weight:600}
+.miss{color:#ff5252;font-weight:600}
+
 .legend{
  font-size:12px;
  opacity:.8;
- line-height:1.6
+ line-height:1.6;
+ margin-top:8px
 }
 
-footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
+footer{
+ text-align:center;
+ font-size:12px;
+ opacity:.6;
+ margin:12px
+}
 </style>
 </head>
 
@@ -90,8 +154,12 @@ footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
 </div>
 
 <div class="card">
- <h3>Prediction vs Actual (Last 10)</h3>
+ <h3>Last 10 History</h3>
+ <div id="history" class="history">--</div>
+</div>
 
+<div class="card">
+ <h3>Prediction vs Actual (Last 10)</h3>
  <table>
   <thead>
    <tr>
@@ -112,10 +180,25 @@ footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
  </div>
 </div>
 
+<div class="card">
+ <h3>Top 3 Digit Probability</h3>
+ <div id="top3">--</div>
+</div>
+
+<div class="card">
+ <h3>Big / Small Probability</h3>
+ <div id="bigSmall"></div>
+</div>
+
+<div class="card">
+ <h3>Color Probability</h3>
+ <div id="colorProb"></div>
+</div>
+
 </div>
 
 <footer>
-Learning & Observation Only • No Guarantee • Credit: Noob Hacker
+Learning & Observation Only • No Prediction Guarantee • Credit: Noob Hacker
 </footer>
 
 <script>
@@ -126,12 +209,16 @@ const PROXY="https://signal.chat31525.workers.dev/?url=";
 let refreshTimer,countdownTimer;
 document.getElementById("market").onchange=manualRefresh;
 
-function manualRefresh(){clearTimeout(refreshTimer);loadData()}
+function manualRefresh(){
+ clearTimeout(refreshTimer);
+ clearInterval(countdownTimer);
+ loadData();
+}
 
 async function loadData(){
  const market=document.getElementById("market").value;
  const API=market==="1"?API_30S:API_1M;
- const url=PROXY+encodeURIComponent(API+"?pageSize=20&pageNo=1");
+ const url=PROXY+encodeURIComponent(API+"?pageSize=100&pageNo=1");
 
  const res=await fetch(url);
  const json=await res.json();
@@ -141,40 +228,95 @@ async function loadData(){
   (BigInt(list[0].issueNumber)+1n).toString();
 
  analyse(list);
+ scheduleNext();
+}
+
+function scheduleNext(){
+ const market=document.getElementById("market").value;
+ const base=market==="1"?30000:60000;
+ const delay=base-(Date.now()%base);
+ let s=Math.floor(delay/1000);
+
+ document.getElementById("countdown").textContent="Next refresh: "+s+"s";
+ countdownTimer=setInterval(()=>{
+  s--;
+  document.getElementById("countdown").textContent="Next refresh: "+s+"s";
+  if(s<=0)clearInterval(countdownTimer);
+ },1000);
+
+ refreshTimer=setTimeout(loadData,delay);
 }
 
 function analyse(list){
- let tbody="";
- const digitCount=Array(10).fill(0);
+ // History
+ document.getElementById("history").innerHTML=
+  list.slice(0,10).map(r=>
+   `<div class="hist">
+     <span>${r.issueNumber.slice(-4)}</span>
+     <span>${r.number} (${r.color})</span>
+    </div>`).join("");
 
- list.forEach(r=>digitCount[+r.number]++);
+ let digitCount=Array(10).fill(0);
+ let big=0,small=0,color={g:0,r:0,v:0};
 
+ list.forEach(r=>{
+  const n=+r.number;
+  digitCount[n]++;
+  n>=5?big++:small++;
+  if(n===0||n===5)color.v++;
+  else if(n%2)color.g++; else color.r++;
+ });
+
+ // Prediction logic (simple frequency)
  const predDigit=digitCount.indexOf(Math.max(...digitCount));
  const predColor=predDigit===0||predDigit===5?"violet":predDigit%2?"green":"red";
  const predSize=predDigit>=5?"big":"small";
 
- list.slice(0,10).forEach(r=>{
-  const dMatch=predDigit==r.number;
-  const cMatch=predColor===(r.color.includes("violet")?"violet":r.color);
-  const sMatch=(r.number>=5?"big":"small")===predSize;
+ // PVA table
+ document.getElementById("pva").innerHTML=
+  list.slice(0,10).map(r=>{
+   const d=+r.number;
+   const dMatch=d===predDigit;
+   const cAct=r.color.includes("violet")?"violet":r.color;
+   const cMatch=cAct===predColor;
+   const sAct=d>=5?"big":"small";
+   const sMatch=sAct===predSize;
 
-  tbody+=`
-  <tr>
-   <td>${r.issueNumber.slice(-4)}</td>
-   <td class="${dMatch?"match":"miss"}">${predDigit} / ${r.number}</td>
-   <td class="${cMatch?"match":"miss"}">${predColor} / ${r.color}</td>
-   <td class="${sMatch?"match":"miss"}">${predSize} / ${r.number>=5?"big":"small"}</td>
-  </tr>`;
- });
+   return `<tr>
+    <td>${r.issueNumber.slice(-4)}</td>
+    <td class="${dMatch?"match":"miss"}">${predDigit} / ${d}</td>
+    <td class="${cMatch?"match":"miss"}">${predColor} / ${cAct}</td>
+    <td class="${sMatch?"match":"miss"}">${predSize} / ${sAct}</td>
+   </tr>`;
+  }).join("");
 
- document.getElementById("pva").innerHTML=tbody;
-
- const diff=Math.abs(digitCount.filter((_,i)=>i>=5).reduce((a,b)=>a+b,0)
- - digitCount.filter((_,i)=>i<5).reduce((a,b)=>a+b,0));
-
+ // Risk
+ const diff=Math.abs(big-small);
  const box=document.getElementById("riskBox");
- box.className="risk "+(diff>6?"easy":diff>3?"normal":"hard");
- box.textContent=diff>6?"EASY":diff>3?"NORMAL":"HARD";
+ box.textContent=diff>10?"EASY":diff>5?"NORMAL":"HARD";
+ box.className="risk "+(diff>10?"easy":diff>5?"normal":"hard");
+
+ // Top 3
+ document.getElementById("top3").innerHTML=
+  digitCount.map((c,i)=>({i,p:c/list.length*100}))
+   .sort((a,b)=>b.p-a.p).slice(0,3)
+   .map(x=>`Digit ${x.i} → ${x.p.toFixed(1)}%`).join("<br>");
+
+ // Big Small
+ document.getElementById("bigSmall").innerHTML=
+  `Big ${(big/list.length*100).toFixed(1)}%
+   <div class="bar"><div class="fill" style="width:${big/list.length*100}%"></div></div>
+   Small ${(small/list.length*100).toFixed(1)}%
+   <div class="bar"><div class="fill" style="width:${small/list.length*100}%"></div></div>`;
+
+ // Color
+ document.getElementById("colorProb").innerHTML=
+  `Green ${(color.g/list.length*100).toFixed(1)}%
+   <div class="bar"><div class="fill greenfill" style="width:${color.g/list.length*100}%"></div></div>
+   Red ${(color.r/list.length*100).toFixed(1)}%
+   <div class="bar"><div class="fill redfill" style="width:${color.r/list.length*100}%"></div></div>
+   Violet ${(color.v/list.length*100).toFixed(1)}%
+   <div class="bar"><div class="fill violetfill" style="width:${color.v/list.length*100}%"></div></div>`;
 }
 
 loadData();
