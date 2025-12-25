@@ -7,154 +7,104 @@
 
 <style>
 body{
-  margin:0;
-  font-family:system-ui,-apple-system;
-  background:radial-gradient(circle at top,#1b2a40,#050712 70%);
-  color:#eaf1ff;
+ margin:0;
+ font-family:system-ui,-apple-system;
+ background:radial-gradient(circle at top,#1b2a40,#050712 70%);
+ color:#eaf1ff;
 }
-header{
-  padding:14px;
-  border-bottom:1px solid rgba(255,255,255,.08)
-}
-.title{
-  font-size:18px;
-  font-weight:600;
-}
-.topbar{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  align-items:center;
-  margin-top:10px
-}
+header{padding:14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.title{font-size:18px;font-weight:600;margin-bottom:6px}
+.topbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 select,button{
-  background:#0d1a33;
-  color:#fff;
-  border:1px solid #2f4b8f;
-  border-radius:8px;
-  padding:6px 12px;
-  cursor:pointer
+ background:#0d1a33;color:#fff;border:1px solid #2f4b8f;
+ border-radius:8px;padding:6px 12px;cursor:pointer
 }
-.container{
-  padding:14px;
-  display:grid;
-  gap:14px
-}
-.card{
-  background:rgba(255,255,255,.06);
-  border-radius:14px;
-  padding:14px
-}
-h3{
-  margin:0 0 10px;
-  font-size:15px;
-  opacity:.9
-}
-.row{
-  display:flex;
-  justify-content:space-between;
-  font-size:14px;
-  margin:6px 0
-}
-.bar{
-  height:8px;
-  background:#222;
-  border-radius:6px;
-  overflow:hidden
-}
-.fill{height:100%;background:#4fa3ff}
+.status{display:flex;gap:10px;font-size:12px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
 .green{background:#4dff88}
 .red{background:#ff5252}
-.violet{background:#c77dff}
+.gray{background:#777}
 
-.bigtext{
-  font-size:22px;
-  font-weight:700;
-  text-align:center
-}
+.container{padding:14px;display:grid;gap:14px}
+.card{background:rgba(255,255,255,.06);border-radius:14px;padding:14px}
+h3{margin:0 0 10px;font-size:15px}
+.row{display:flex;justify-content:space-between;font-size:14px;margin:6px 0}
+.bar{height:8px;background:#222;border-radius:6px;overflow:hidden}
+.fill{height:100%;background:#4fa3ff}
+.greenfill{background:#4dff88}
+.redfill{background:#ff5252}
 
-.flipbox{
-  text-align:center;
-  font-size:14px;
-  opacity:.9
-}
+.biasText{font-size:18px;font-weight:700;text-align:center}
+.sub{font-size:12px;opacity:.7;text-align:center;margin-top:4px}
 
 .table{
-  font-size:13px;
-  display:grid;
-  gap:6px
+ font-size:13px;
+ display:grid;
+ grid-template-columns:80px 1fr 1fr 80px;
+ gap:6px;
 }
-.tr{
-  display:grid;
-  grid-template-columns:1.2fr 1fr 1fr 1fr;
-  gap:6px;
-  background:rgba(0,0,0,.25);
-  padding:6px 8px;
-  border-radius:6px
-}
-.th{
-  font-weight:600;
-  opacity:.7;
-  background:none
+.cell{
+ background:rgba(0,0,0,.25);
+ padding:6px;
+ border-radius:6px;
+ text-align:center
 }
 .match{color:#4dff88}
 .miss{color:#ff5252}
+.wait{color:#ffc107}
 
-footer{
-  text-align:center;
-  font-size:12px;
-  opacity:.6;
-  margin:12px
-}
+footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
 </style>
 </head>
 
 <body>
 
 <header>
-  <div class="title">Noob Hacker – Market Pattern Dashboard</div>
-  <div class="topbar">
-    <select id="market">
-      <option value="30">30 Second Market</option>
-      <option value="60">1 Minute Market</option>
-    </select>
-    <button onclick="manualRefresh()">Manual Refresh</button>
-    <div id="timer">--</div>
+ <div class="title">Noob Hacker – Market Pattern Dashboard</div>
+ <div class="topbar">
+  <select id="market">
+   <option value="30">30 Second Market</option>
+   <option value="60">1 Minute Market</option>
+  </select>
+
+  <button onclick="manualRefresh()">Manual Refresh</button>
+  <div id="countdown">Remaining: --</div>
+
+  <div class="status">
+   <span><i class="dot" id="netDot"></i> Net</span>
+   <span><i class="dot" id="apiDot"></i> API</span>
   </div>
+ </div>
 </header>
 
 <div class="container">
 
-  <div class="card">
-    <h3>Running Period</h3>
-    <div class="bigtext" id="runningPeriod">--</div>
-  </div>
+ <div class="card">
+  <h3>Running Period</h3>
+  <div class="biasText" id="runningPeriod">--</div>
+ </div>
 
-  <div class="card">
-    <h3>Big / Small Bias</h3>
-    <div class="bigtext" id="bsBias">--</div>
-    <div class="bar"><div class="fill" id="bsBar"></div></div>
-    <div class="flipbox" id="bsFlip">Flip chance: --</div>
-  </div>
+ <div class="card">
+  <h3>Big / Small Bias</h3>
+  <div class="biasText" id="bsBias">--</div>
+  <div class="sub" id="bsFlip">Flip chance: --</div>
+ </div>
 
-  <div class="card">
-    <h3>Color Bias</h3>
-    <div class="bigtext" id="colorBias">--</div>
-    <div class="bar"><div class="fill" id="colorBar"></div></div>
-    <div class="flipbox" id="colorFlip">Flip chance: --</div>
-  </div>
+ <div class="card">
+  <h3>Color Bias</h3>
+  <div class="biasText" id="colorBias">--</div>
+  <div class="sub" id="colorFlip">Flip chance: --</div>
+ </div>
 
-  <div class="card">
-    <h3>Prediction vs Actual (Last 10)</h3>
-    <div class="table" id="historyTable">
-      <div class="tr th">
-        <div>Period</div>
-        <div>Script BS</div>
-        <div>Actual BS</div>
-        <div>Result</div>
-      </div>
-    </div>
+ <div class="card">
+  <h3>Prediction vs Actual (Last 10)</h3>
+  <div class="table" id="pvTable">
+   <div class="cell"><b>Period</b></div>
+   <div class="cell"><b>Script BS</b></div>
+   <div class="cell"><b>Actual BS</b></div>
+   <div class="cell"><b>Result</b></div>
   </div>
+ </div>
 
 </div>
 
@@ -163,160 +113,143 @@ Pattern-based observation only • Credit: Noob Hacker
 </footer>
 
 <script>
-/* CONFIG */
-const API_30 = "https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json";
-const API_60 = "https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
-const PROXY = "https://signal.chat31525.workers.dev/?url=";
+const API_30="https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json";
+const API_60="https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
+const PROXY ="https://signal.chat31525.workers.dev/?url=";
 
-let memory = []; // prediction memory
-let refreshTimer, countdownTimer;
+let timer,countTimer;
+let memory=[]; // prediction memory
 
-/* UTIL */
-function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
-
-/* MAIN */
-document.getElementById("market").onchange = manualRefresh;
-
-function manualRefresh(){
-  clearTimeout(refreshTimer);
-  clearInterval(countdownTimer);
-  loadData();
-}
+function setDot(id,c){document.getElementById(id).className="dot "+c}
+function manualRefresh(){clearTimers();loadData()}
+function clearTimers(){clearTimeout(timer);clearInterval(countTimer)}
 
 async function loadData(){
-  const sec = document.getElementById("market").value;
-  const API = sec=="30"?API_30:API_60;
-  const url = PROXY+encodeURIComponent(API+"?pageSize=500&pageNo=1");
+ setDot("netDot",navigator.onLine?"green":"red");
+ setDot("apiDot","gray");
 
-  try{
-    const res = await fetch(url);
-    const json = await res.json();
-    const list = json.data.list;
+ const sec=document.getElementById("market").value;
+ const API=sec==="30"?API_30:API_60;
+ const url=API+"?pageSize=500&pageNo=1";
 
-    analyse(list,parseInt(sec));
-  }catch(e){
-    document.getElementById("runningPeriod").textContent="DATA ERROR";
-  }
+ try{
+  const res=await fetch(PROXY+encodeURIComponent(url));
+  const json=await res.json();
+  if(json.code!==0||!json.data?.list?.length)throw 1;
+
+  setDot("apiDot","green");
+  processData(json.data.list);
+  scheduleNext(sec);
+ }catch{
+  setDot("apiDot","red");
+ }
 }
 
-/* CORE ANALYSIS */
-function analyse(list,periodSec){
-  // running period = last closed
-  const running = list[0].issueNumber;
-  document.getElementById("runningPeriod").textContent = running;
+function scheduleNext(sec){
+ clearTimers();
+ const base=sec*1000;
+ const delay=base-(Date.now()%base)+200;
+ startCountdown(delay);
+ timer=setTimeout(loadData,delay);
+}
 
-  // streams
-  const bs = list.map(r=>+r.number>=5?1:0);
-  const col = list.map(r=>{
-    if(r.color.includes("violet")) return 2;
-    return r.color.includes("green")?1:0;
-  });
+function startCountdown(ms){
+ let s=Math.floor(ms/1000);
+ document.getElementById("countdown").textContent="Remaining: "+s+"s";
+ countTimer=setInterval(()=>{
+  s--;
+  document.getElementById("countdown").textContent="Remaining: "+s+"s";
+  if(s<=0)clearInterval(countTimer);
+ },1000);
+}
 
-  // big/small metrics
-  const recent = bs.slice(0,50);
-  const long = bs.slice(0,300);
+function processData(list){
+ const latest=list[0];
+ const running=(BigInt(latest.issueNumber)+1n).toString();
+ document.getElementById("runningPeriod").textContent=running;
 
-  const trend = avg(long);
-  const recentTrend = avg(recent);
-  const exhaustion = Math.abs(recentTrend-trend);
-  const flips = flipRate(recent);
-  const volatility = stddev(recent);
+ // ---- pattern analysis (500 history)
+ let bs=[],color=[];
+ list.forEach(r=>{
+  const n=+r.number;
+  bs.push(n>=5?"Big":"Small");
+  color.push(n===0||n===5?"Violet":(n%2?"Green":"Red"));
+ });
 
-  let rawBias = (recentTrend-0.5) - exhaustion - flips*0.5 - volatility*0.3;
-  rawBias = clamp(rawBias,-0.5,0.5);
+ const recent=bs.slice(0,50);
+ const bigRate=recent.filter(x=>x==="Big").length/recent.length;
+ const flips=recent.filter((v,i)=>i&&v!==recent[i-1]).length/recent.length;
 
-  const bigPct = Math.round((0.5+rawBias)*100);
-  const smallPct = 100-bigPct;
+ let bias=(bigRate-0.5) - flips*0.3;
+ bias=Math.max(-0.3,Math.min(0.3,bias));
 
-  document.getElementById("bsBias").textContent =
-    bigPct>smallPct?`Big ${bigPct}%`:`Small ${smallPct}%`;
-  document.getElementById("bsBar").style.width = bigPct+"%";
+ const bigPct=Math.round((0.5+bias)*100);
+ const smallPct=100-bigPct;
+ const flipBS=Math.round(flips*100);
 
-  const bsFlip = clamp((exhaustion+flips+volatility)*100,10,80);
-  document.getElementById("bsFlip").textContent =
-    "Flip chance: "+Math.round(bsFlip)+"%";
+ document.getElementById("bsBias").textContent=
+  bigPct>=smallPct?`Big ${bigPct}%`:`Small ${smallPct}%`;
+ document.getElementById("bsFlip").textContent=
+  `Flip chance: ${flipBS}%`;
 
-  // color
-  const cg = col.filter(v=>v===1).length/col.length;
-  const cr = col.filter(v=>v===0).length/col.length;
-  let colorBias = clamp(cg-cr,-0.4,0.4);
-  const greenPct = Math.round((0.5+colorBias)*100);
-  const redPct = 100-greenPct;
+ // color
+ const cRecent=color.slice(0,50);
+ const gRate=cRecent.filter(x=>x==="Green").length/cRecent.length;
+ const cFlips=cRecent.filter((v,i)=>i&&v!==cRecent[i-1]).length/cRecent.length;
 
-  document.getElementById("colorBias").textContent =
-    greenPct>redPct?`Green ${greenPct}%`:`Red ${redPct}%`;
-  document.getElementById("colorBar").style.width = greenPct+"%";
+ let cBias=(gRate-0.5)-cFlips*0.25;
+ cBias=Math.max(-0.3,Math.min(0.3,cBias));
 
-  const colorFlip = clamp(Math.abs(colorBias)*120,15,70);
-  document.getElementById("colorFlip").textContent =
-    "Flip chance: "+Math.round(colorFlip)+"%";
+ const gPct=Math.round((0.5+cBias)*100);
+ const rPct=100-gPct;
 
-  // MEMORY + MATCH/MISS
-  const actualBS = bs[0]?"Big":"Small";
-  if(memory.length>0){
-    memory[0].actual = actualBS;
-  }
+ document.getElementById("colorBias").textContent=
+  gPct>=rPct?`Green ${gPct}%`:`Red ${rPct}%`;
+ document.getElementById("colorFlip").textContent=
+  `Flip chance: ${Math.round(cFlips*100)}%`;
 
+ // ----- prediction memory (no duplicate)
+ if(!memory.find(m=>m.period===running)){
   memory.unshift({
-    period: running,
-    pred: bigPct>=50?"Big":"Small",
-    actual: "--"
+   period:running,
+   predBS:bigPct>=smallPct?"Big":"Small",
+   actual:"WAIT"
   });
-  memory = memory.slice(0,10);
+ }
 
-  renderTable();
+ // ----- update actual from closed results
+ list.slice(0,10).forEach(r=>{
+  const p=r.issueNumber;
+  const actualBS=(+r.number>=5)?"Big":"Small";
+  const m=memory.find(x=>x.period===p);
+  if(m&&m.actual==="WAIT")m.actual=actualBS;
+ });
 
-  // timer
-  alignTimer(periodSec);
+ memory=memory.slice(0,10);
+ renderTable();
 }
 
-/* TABLE */
 function renderTable(){
-  const t = document.getElementById("historyTable");
-  t.innerHTML = `
-    <div class="tr th">
-      <div>Period</div>
-      <div>Script BS</div>
-      <div>Actual BS</div>
-      <div>Result</div>
-    </div>`;
-  memory.forEach(r=>{
-    const ok = r.actual==="--"?"":(r.pred===r.actual);
-    t.innerHTML += `
-      <div class="tr">
-        <div>${r.period.slice(-5)}</div>
-        <div>${r.pred}</div>
-        <div>${r.actual}</div>
-        <div class="${ok?'match':'miss'}">
-          ${r.actual==="--"?"WAIT":(ok?"MATCH":"MISS")}
-        </div>
-      </div>`;
-  });
-}
-
-/* TIMER */
-function alignTimer(sec){
-  clearInterval(countdownTimer);
-  function tick(){
-    const now = Date.now();
-    const remain = sec*1000 - (now%(sec*1000));
-    document.getElementById("timer").textContent =
-      "Remaining: "+Math.ceil(remain/1000)+"s";
+ const t=document.getElementById("pvTable");
+ t.innerHTML=`
+  <div class="cell"><b>Period</b></div>
+  <div class="cell"><b>Script BS</b></div>
+  <div class="cell"><b>Actual BS</b></div>
+  <div class="cell"><b>Result</b></div>
+ `;
+ memory.forEach(m=>{
+  let res="WAIT",cls="wait";
+  if(m.actual!=="WAIT"){
+   res=m.predBS===m.actual?"MATCH":"MISS";
+   cls=res==="MATCH"?"match":"miss";
   }
-  tick();
-  countdownTimer = setInterval(tick,1000);
-}
-
-/* MATH */
-function avg(a){return a.reduce((x,y)=>x+y,0)/a.length}
-function flipRate(a){
-  let f=0;
-  for(let i=1;i<a.length;i++) if(a[i]!==a[i-1]) f++;
-  return f/a.length;
-}
-function stddev(a){
-  const m=avg(a);
-  return Math.sqrt(avg(a.map(x=>(x-m)**2)));
+  t.innerHTML+=`
+   <div class="cell">${m.period.slice(-5)}</div>
+   <div class="cell">${m.predBS}</div>
+   <div class="cell">${m.actual}</div>
+   <div class="cell ${cls}">${res}</div>
+  `;
+ });
 }
 
 loadData();
