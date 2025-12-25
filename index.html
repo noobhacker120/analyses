@@ -28,14 +28,9 @@ select,button{
 .container{padding:14px;display:grid;gap:14px}
 .card{background:rgba(255,255,255,.06);border-radius:14px;padding:14px}
 h3{margin:0 0 10px;font-size:15px}
-.row{display:flex;justify-content:space-between;font-size:14px;margin:6px 0}
-.bar{height:8px;background:#222;border-radius:6px;overflow:hidden}
-.fill{height:100%;background:#4fa3ff}
-.greenfill{background:#4dff88}
-.redfill{background:#ff5252}
 
-.biasText{font-size:18px;font-weight:700;text-align:center}
-.sub{font-size:12px;opacity:.7;text-align:center;margin-top:4px}
+.biasMain{font-size:20px;font-weight:700;text-align:center}
+.biasSub{font-size:12px;opacity:.7;text-align:center;margin-top:4px}
 
 .table{
  font-size:13px;
@@ -81,29 +76,18 @@ footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
 
  <div class="card">
   <h3>Running Period</h3>
-  <div class="biasText" id="runningPeriod">--</div>
+  <div class="biasMain" id="runningPeriod">--</div>
  </div>
 
  <div class="card">
   <h3>Big / Small Bias</h3>
-  <div class="biasText" id="bsBias">--</div>
-  <div class="sub" id="bsFlip">Flip chance: --</div>
- </div>
-
- <div class="card">
-  <h3>Color Bias</h3>
-  <div class="biasText" id="colorBias">--</div>
-  <div class="sub" id="colorFlip">Flip chance: --</div>
+  <div class="biasMain" id="bsBias">--</div>
+  <div class="biasSub" id="bsFlip">Flip chance: --</div>
  </div>
 
  <div class="card">
   <h3>Prediction vs Actual (Last 10)</h3>
-  <div class="table" id="pvTable">
-   <div class="cell"><b>Period</b></div>
-   <div class="cell"><b>Script BS</b></div>
-   <div class="cell"><b>Actual BS</b></div>
-   <div class="cell"><b>Result</b></div>
-  </div>
+  <div class="table" id="pvTable"></div>
  </div>
 
 </div>
@@ -118,7 +102,7 @@ const API_60="https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.j
 const PROXY ="https://signal.chat31525.workers.dev/?url=";
 
 let timer,countTimer;
-let memory=[]; // prediction memory
+let memory=[];
 
 function setDot(id,c){document.getElementById(id).className="dot "+c}
 function manualRefresh(){clearTimers();loadData()}
@@ -130,19 +114,15 @@ async function loadData(){
 
  const sec=document.getElementById("market").value;
  const API=sec==="30"?API_30:API_60;
- const url=API+"?pageSize=500&pageNo=1";
 
  try{
-  const res=await fetch(PROXY+encodeURIComponent(url));
+  const res=await fetch(PROXY+encodeURIComponent(API+"?pageSize=500&pageNo=1"));
   const json=await res.json();
-  if(json.code!==0||!json.data?.list?.length)throw 1;
-
+  if(json.code!==0)throw 1;
   setDot("apiDot","green");
-  processData(json.data.list);
+  analyse(json.data.list);
   scheduleNext(sec);
- }catch{
-  setDot("apiDot","red");
- }
+ }catch{setDot("apiDot","red")}
 }
 
 function scheduleNext(sec){
@@ -163,66 +143,44 @@ function startCountdown(ms){
  },1000);
 }
 
-function processData(list){
- const latest=list[0];
- const running=(BigInt(latest.issueNumber)+1n).toString();
+function analyse(list){
+ const running=(BigInt(list[0].issueNumber)+1n).toString();
  document.getElementById("runningPeriod").textContent=running;
 
- // ---- pattern analysis (500 history)
- let bs=[],color=[];
- list.forEach(r=>{
-  const n=+r.number;
-  bs.push(n>=5?"Big":"Small");
-  color.push(n===0||n===5?"Violet":(n%2?"Green":"Red"));
- });
+ /* ----- PATTERN LOGIC ----- */
+ let seq=list.map(r=>(+r.number>=5?"Big":"Small"));
 
- const recent=bs.slice(0,50);
- const bigRate=recent.filter(x=>x==="Big").length/recent.length;
- const flips=recent.filter((v,i)=>i&&v!==recent[i-1]).length/recent.length;
+ const overall=seq.slice(0,500);
+ const recent=seq.slice(0,20);
 
- let bias=(bigRate-0.5) - flips*0.3;
- bias=Math.max(-0.3,Math.min(0.3,bias));
+ const overallBias=(overall.filter(x=>x==="Big").length/overall.length)-0.5;
+ const momentum=(recent.filter(x=>x==="Big").length/recent.length)-0.5;
+
+ let flips=0;
+ for(let i=1;i<recent.length;i++)if(recent[i]!==recent[i-1])flips++;
+ flips/=recent.length;
+
+ let bias=overallBias*0.4 + momentum*0.6 - flips*0.3;
+ bias=Math.max(-0.25,Math.min(0.25,bias));
 
  const bigPct=Math.round((0.5+bias)*100);
  const smallPct=100-bigPct;
- const flipBS=Math.round(flips*100);
 
  document.getElementById("bsBias").textContent=
-  bigPct>=smallPct?`Big ${bigPct}%`:`Small ${smallPct}%`;
+  Math.abs(bigPct-smallPct)<6 ? "Neutral" :
+  bigPct>smallPct?`Big ${bigPct}%`:`Small ${smallPct}%`;
+
  document.getElementById("bsFlip").textContent=
-  `Flip chance: ${flipBS}%`;
+  "Flip chance: "+Math.round(flips*100)+"%";
 
- // color
- const cRecent=color.slice(0,50);
- const gRate=cRecent.filter(x=>x==="Green").length/cRecent.length;
- const cFlips=cRecent.filter((v,i)=>i&&v!==cRecent[i-1]).length/cRecent.length;
-
- let cBias=(gRate-0.5)-cFlips*0.25;
- cBias=Math.max(-0.3,Math.min(0.3,cBias));
-
- const gPct=Math.round((0.5+cBias)*100);
- const rPct=100-gPct;
-
- document.getElementById("colorBias").textContent=
-  gPct>=rPct?`Green ${gPct}%`:`Red ${rPct}%`;
- document.getElementById("colorFlip").textContent=
-  `Flip chance: ${Math.round(cFlips*100)}%`;
-
- // ----- prediction memory (no duplicate)
+ /* ----- MEMORY ----- */
  if(!memory.find(m=>m.period===running)){
-  memory.unshift({
-   period:running,
-   predBS:bigPct>=smallPct?"Big":"Small",
-   actual:"WAIT"
-  });
+  memory.unshift({period:running,pred:bigPct>smallPct?"Big":"Small",actual:"WAIT"});
  }
 
- // ----- update actual from closed results
  list.slice(0,10).forEach(r=>{
-  const p=r.issueNumber;
-  const actualBS=(+r.number>=5)?"Big":"Small";
-  const m=memory.find(x=>x.period===p);
-  if(m&&m.actual==="WAIT")m.actual=actualBS;
+  const m=memory.find(x=>x.period===r.issueNumber);
+  if(m)m.actual=(+r.number>=5)?"Big":"Small";
  });
 
  memory=memory.slice(0,10);
@@ -240,12 +198,12 @@ function renderTable(){
  memory.forEach(m=>{
   let res="WAIT",cls="wait";
   if(m.actual!=="WAIT"){
-   res=m.predBS===m.actual?"MATCH":"MISS";
+   res=m.pred===m.actual?"MATCH":"MISS";
    cls=res==="MATCH"?"match":"miss";
   }
   t.innerHTML+=`
    <div class="cell">${m.period.slice(-5)}</div>
-   <div class="cell">${m.predBS}</div>
+   <div class="cell">${m.pred}</div>
    <div class="cell">${m.actual}</div>
    <div class="cell ${cls}">${res}</div>
   `;
