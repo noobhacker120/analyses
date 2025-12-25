@@ -4,223 +4,849 @@
 <meta charset="UTF-8">
 <title>Noob Hacker – Market Pattern Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-body{
- margin:0;
- font-family:system-ui,-apple-system;
- background:radial-gradient(circle at top,#1b2a40,#050712 70%);
- color:#eaf1ff;
+/* Base Styles */
+:root {
+  --primary-bg: radial-gradient(circle at top, #1b2a40, #050712 70%);
+  --card-bg: rgba(255, 255, 255, 0.08);
+  --card-border: rgba(255, 255, 255, 0.1);
+  --text-primary: #eaf1ff;
+  --text-secondary: #a0b3d9;
+  --accent-blue: #3a7bd5;
+  --accent-green: #4dff88;
+  --accent-red: #ff5252;
+  --accent-yellow: #ffc107;
+  --neutral-gray: #4a5a7a;
+  --good-bg: rgba(77, 255, 136, 0.1);
+  --bad-bg: rgba(255, 82, 82, 0.1);
+  --neutral-bg: rgba(255, 193, 7, 0.1);
+  --border-radius: 12px;
+  --transition: all 0.3s ease;
 }
-header{padding:14px;border-bottom:1px solid rgba(255,255,255,.08)}
-.title{font-size:18px;font-weight:600;margin-bottom:6px}
-.topbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
-select,button{
- background:#0d1a33;color:#fff;border:1px solid #2f4b8f;
- border-radius:8px;padding:6px 12px;cursor:pointer
-}
-.container{padding:14px;display:grid;gap:14px}
-.card{background:rgba(255,255,255,.06);border-radius:14px;padding:14px}
-h3{margin:0 0 10px;font-size:15px}
-.biasMain{font-size:20px;font-weight:700;text-align:center}
-.biasSub{font-size:12px;opacity:.7;text-align:center;margin-top:4px}
 
-.table{
- font-size:13px;
- display:grid;
- grid-template-columns:80px 1fr 1fr;
- gap:6px
+* {
+  box-sizing: border-box;
 }
-.cell{
- background:rgba(0,0,0,.25);
- padding:6px;
- border-radius:6px;
- text-align:center
-}
-.good{color:#4dff88;font-weight:600}
-.bad{color:#ff5252;font-weight:600}
-.neutral{color:#ffc107;font-weight:600}
 
-footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--primary-bg);
+  color: var(--text-primary);
+  line-height: 1.5;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Header Styles */
+header {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--card-border);
+  background: rgba(11, 20, 40, 0.7);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.title-container {
+  margin-bottom: 15px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 5px 0;
+  background: linear-gradient(90deg, var(--accent-blue), #00d2ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+select, button {
+  background: rgba(13, 26, 51, 0.8);
+  color: var(--text-primary);
+  border: 1px solid rgba(47, 75, 143, 0.5);
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+select:hover, button:hover {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 10px rgba(58, 123, 213, 0.3);
+}
+
+button {
+  background: linear-gradient(90deg, #1a2980, #26d0ce);
+  border: none;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#countdown {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 140px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#countdown.updating {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(58, 123, 213, 0.7); }
+  70% { box-shadow: 0 0 0 6px rgba(58, 123, 213, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(58, 123, 213, 0); }
+}
+
+/* Main Container */
+.container {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  border: 1px solid var(--card-border);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent-blue), #00d2ff);
+}
+
+.card h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.biasMain {
+  font-size: 32px;
+  font-weight: 700;
+  text-align: center;
+  margin: 15px 0;
+}
+
+.Big {
+  color: var(--accent-green);
+}
+
+.Small {
+  color: var(--accent-red);
+}
+
+.Neutral {
+  color: var(--accent-yellow);
+}
+
+.Green {
+  color: var(--accent-green);
+}
+
+.Red {
+  color: var(--accent-red);
+}
+
+.biasSub {
+  font-size: 14px;
+  opacity: 0.9;
+  text-align: center;
+  margin-top: 8px;
+  color: var(--text-secondary);
+}
+
+/* Stats Cards */
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.stat-item {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Bias Visualization */
+.bias-visual {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  margin: 15px 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.bias-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s ease;
+}
+
+/* Prediction Table */
+.table-container {
+  grid-column: 1 / -1;
+}
+
+.table {
+  font-size: 14px;
+  display: grid;
+  grid-template-columns: 100px repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.cell {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 12px 8px;
+  border-radius: 8px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header {
+  background: rgba(13, 26, 51, 0.8);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.good {
+  color: var(--accent-green);
+  background: var(--good-bg);
+  font-weight: 600;
+}
+
+.bad {
+  color: var(--accent-red);
+  background: var(--bad-bg);
+  font-weight: 600;
+}
+
+.neutral {
+  color: var(--accent-yellow);
+  background: var(--neutral-bg);
+  font-weight: 600;
+}
+
+.prediction-status {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.prediction-status.correct {
+  background-color: var(--accent-green);
+}
+
+.prediction-status.incorrect {
+  background-color: var(--accent-red);
+}
+
+.prediction-status.waiting {
+  background-color: var(--accent-yellow);
+}
+
+/* Footer */
+footer {
+  text-align: center;
+  font-size: 13px;
+  opacity: 0.7;
+  margin: 30px 0 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--card-border);
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    grid-template-columns: 1fr;
+    padding: 15px;
+  }
+  
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  select, button, #countdown {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .table {
+    grid-template-columns: 80px repeat(2, 1fr);
+    overflow-x: auto;
+    display: block;
+  }
+  
+  .table-header, .table-row {
+    display: grid;
+    grid-template-columns: 80px repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .biasMain {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .card {
+    padding: 15px;
+  }
+}
+
+/* Loading Animation */
+.loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border-top-color: var(--accent-blue);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Tooltip */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltip-text {
+  visibility: hidden;
+  width: 200px;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 10px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
 </style>
 </head>
 
 <body>
 
 <header>
- <div class="title">Noob Hacker – Market Pattern Dashboard</div>
- <div class="topbar">
-  <select id="market">
-   <option value="30">30 Second</option>
-   <option value="60">1 Minute</option>
-  </select>
-  <button onclick="manualRefresh()">Manual Refresh</button>
-  <div id="countdown">Remaining: --</div>
- </div>
+  <div class="title-container">
+    <h1 class="title">Noob Hacker – Market Pattern Dashboard</h1>
+    <p class="subtitle">Real-time pattern analysis & prediction engine</p>
+  </div>
+  
+  <div class="topbar">
+    <div class="controls">
+      <select id="market">
+        <option value="30">30 Second</option>
+        <option value="60">1 Minute</option>
+      </select>
+      <button onclick="manualRefresh()">
+        <i class="fas fa-sync-alt"></i> Manual Refresh
+      </button>
+      <div id="countdown">Remaining: --</div>
+    </div>
+    
+    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 5px;">
+      <i class="fas fa-database"></i> Analyzing patterns from 500 most recent draws
+    </div>
+  </div>
 </header>
 
 <div class="container">
 
- <div class="card">
-  <h3>Running Period</h3>
-  <div class="biasMain" id="runningPeriod">--</div>
- </div>
+  <div class="card">
+    <h3><i class="fas fa-clock"></i> Running Period</h3>
+    <div class="biasMain" id="runningPeriod">--</div>
+    <div class="biasSub">Current draw in progress</div>
+    
+    <div class="stats-container">
+      <div class="stat-item">
+        <div class="stat-value" id="totalDraws">--</div>
+        <div class="stat-label">Total Draws</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="analysisCount">--</div>
+        <div class="stat-label">Patterns Analyzed</div>
+      </div>
+    </div>
+  </div>
 
- <div class="card">
-  <h3>Big / Small Bias</h3>
-  <div class="biasMain" id="bsBias">--</div>
-  <div class="biasSub" id="bsFlip">Flip chance: --</div>
- </div>
+  <div class="card">
+    <h3><i class="fas fa-balance-scale"></i> Big / Small Bias</h3>
+    <div class="biasMain" id="bsBias">--</div>
+    <div class="biasSub" id="bsFlip">Flip chance: --</div>
+    
+    <div class="bias-visual">
+      <div class="bias-fill" id="bsVisual" style="width: 50%; background: var(--neutral-gray);"></div>
+    </div>
+    
+    <div class="stats-container">
+      <div class="stat-item">
+        <div class="stat-value" id="bsBigCount">--</div>
+        <div class="stat-label">Big Count</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="bsSmallCount">--</div>
+        <div class="stat-label">Small Count</div>
+      </div>
+    </div>
+  </div>
 
- <div class="card">
-  <h3>Color Bias</h3>
-  <div class="biasMain" id="colorBias">--</div>
-  <div class="biasSub" id="colorFlip">Flip chance: --</div>
- </div>
+  <div class="card">
+    <h3><i class="fas fa-palette"></i> Color Bias</h3>
+    <div class="biasMain" id="colorBias">--</div>
+    <div class="biasSub" id="colorFlip">Flip chance: --</div>
+    
+    <div class="bias-visual">
+      <div class="bias-fill" id="colorVisual" style="width: 50%; background: var(--neutral-gray);"></div>
+    </div>
+    
+    <div class="stats-container">
+      <div class="stat-item">
+        <div class="stat-value" id="colorRedCount">--</div>
+        <div class="stat-label">Red Count</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="colorGreenCount">--</div>
+        <div class="stat-label">Green Count</div>
+      </div>
+    </div>
+  </div>
 
- <div class="card">
-  <h3>Prediction vs Actual (Last 10)</h3>
-  <div class="table" id="pvTable"></div>
- </div>
+  <div class="card table-container">
+    <h3><i class="fas fa-chart-line"></i> Prediction vs Actual (Last 10 Draws)</h3>
+    <div class="table">
+      <div class="cell header">Period</div>
+      <div class="cell header">Big/Small</div>
+      <div class="cell header">Color</div>
+      <div class="cell header">Status</div>
+      <div class="cell header">Accuracy</div>
+    </div>
+    <div id="pvTable"></div>
+  </div>
 
 </div>
 
-<footer>Pattern-based observation only • Credit: Noob Hacker</footer>
+<footer>
+  <div>Pattern-based observation only • For analysis purposes • Credit: Noob Hacker</div>
+  <div style="margin-top: 8px; font-size: 11px;">
+    <i class="fas fa-exclamation-circle"></i> This tool analyzes historical patterns and does not guarantee future results.
+  </div>
+</footer>
 
 <script>
-const API_30="https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json";
-const API_60="https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
-const PROXY ="https://signal.chat31525.workers.dev/?url=";
+const API_30 = "https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json";
+const API_60 = "https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
+const PROXY = "https://signal.chat31525.workers.dev/?url=";
 
-let timer,countTimer;
+let timer, countTimer;
 let memory = JSON.parse(localStorage.getItem("nh_memory") || "[]");
+let lastUpdateTime = null;
 
-function manualRefresh(){
- clearTimers();
- loadData();
-}
-function clearTimers(){
- clearTimeout(timer);
- clearInterval(countTimer);
-}
-
-async function loadData(){
- const sec=document.getElementById("market").value;
- const API=sec==="30"?API_30:API_60;
- try{
-  const res=await fetch(PROXY+encodeURIComponent(API+"?pageSize=500&pageNo=1"));
-  const json=await res.json();
-  if(json.code!==0) return;
-  analyse(json.data.list);
-  scheduleNext(sec);
- }catch{}
+function manualRefresh() {
+  clearTimers();
+  loadData();
+  
+  // Show updating animation
+  const countdownEl = document.getElementById('countdown');
+  countdownEl.textContent = "Updating...";
+  countdownEl.classList.add('updating');
 }
 
-function scheduleNext(sec){
- clearTimers();
- const base=sec*1000;
- const delay=base-(Date.now()%base)+200;
- startCountdown(delay);
- timer=setTimeout(loadData,delay);
-}
-function startCountdown(ms){
- let s=Math.floor(ms/1000);
- document.getElementById("countdown").textContent="Remaining: "+s+"s";
- countTimer=setInterval(()=>{
-  s--;
-  document.getElementById("countdown").textContent="Remaining: "+s+"s";
-  if(s<=0) clearInterval(countTimer);
- },1000);
+function clearTimers() {
+  clearTimeout(timer);
+  clearInterval(countTimer);
 }
 
-function analyse(list){
- const running=(BigInt(list[0].issueNumber)+1n).toString();
- document.getElementById("runningPeriod").textContent=running;
+async function loadData() {
+  const sec = document.getElementById("market").value;
+  const API = sec === "30" ? API_30 : API_60;
+  
+  try {
+    const res = await fetch(PROXY + encodeURIComponent(API + "?pageSize=500&pageNo=1"));
+    const json = await res.json();
+    
+    if (json.code !== 0) {
+      showError("API Error: " + json.message);
+      return;
+    }
+    
+    // Remove updating animation
+    const countdownEl = document.getElementById('countdown');
+    countdownEl.classList.remove('updating');
+    
+    analyse(json.data.list);
+    scheduleNext(sec);
+    lastUpdateTime = new Date();
+    
+  } catch (error) {
+    showError("Network error. Retrying...");
+    // Retry after 5 seconds on error
+    setTimeout(() => loadData(), 5000);
+  }
+}
 
- let bs=[], col=[];
- list.forEach(r=>{
-  bs.push(+r.number>=5?"Big":"Small");
-  if(r.color.includes("green") && !r.color.includes("violet")) col.push("Green");
-  else if(r.color.includes("red")) col.push("Red");
- });
+function showError(message) {
+  console.error(message);
+  // In a production app, you might show this in the UI
+}
 
- const bsBias=calcBias(bs);
- const colBias=calcBias(col);
+function scheduleNext(sec) {
+  clearTimers();
+  const base = sec * 1000;
+  const delay = base - (Date.now() % base) + 200;
+  startCountdown(delay);
+  timer = setTimeout(loadData, delay);
+}
 
- document.getElementById("bsBias").textContent=bsBias.label;
- document.getElementById("bsFlip").textContent="Flip chance: "+bsBias.flip+"%";
- document.getElementById("colorBias").textContent=colBias.label;
- document.getElementById("colorFlip").textContent="Flip chance: "+colBias.flip+"%";
+function startCountdown(ms) {
+  let s = Math.floor(ms / 1000);
+  updateCountdown(s);
+  
+  countTimer = setInterval(() => {
+    s--;
+    if (s <= 0) {
+      clearInterval(countTimer);
+    }
+    updateCountdown(s);
+  }, 1000);
+}
 
- if(!memory.find(m=>m.period===running)){
-  memory.unshift({
-   period:running,
-   predBS:bsBias.side,
-   predCol:colBias.side,
-   actBS:"WAIT",
-   actCol:"WAIT"
+function updateCountdown(seconds) {
+  const countdownEl = document.getElementById('countdown');
+  if (seconds <= 0) {
+    countdownEl.textContent = "Updating...";
+    countdownEl.classList.add('updating');
+  } else {
+    countdownEl.textContent = `Next update: ${seconds}s`;
+    countdownEl.classList.remove('updating');
+  }
+}
+
+function analyse(list) {
+  const running = (BigInt(list[0].issueNumber) + 1n).toString();
+  document.getElementById("runningPeriod").textContent = running;
+  
+  // Update analysis stats
+  document.getElementById("totalDraws").textContent = list.length;
+  document.getElementById("analysisCount").textContent = Math.min(list.length, 500);
+  
+  let bs = [], col = [];
+  let bigCount = 0, smallCount = 0, redCount = 0, greenCount = 0;
+  
+  list.slice(0, 20).forEach(r => {
+    // Big/Small analysis
+    const isBig = +r.number >= 5;
+    bs.push(isBig ? "Big" : "Small");
+    if (isBig) bigCount++; else smallCount++;
+    
+    // Color analysis
+    let color;
+    if (r.color.includes("green") && !r.color.includes("violet")) {
+      color = "Green";
+      greenCount++;
+    } else if (r.color.includes("red")) {
+      color = "Red";
+      redCount++;
+    }
+    col.push(color);
   });
- }
-
- list.slice(0,10).forEach(r=>{
-  const m=memory.find(x=>x.period===r.issueNumber);
-  if(m){
-   m.actBS=(+r.number>=5)?"Big":"Small";
-   if(r.color.includes("green") && !r.color.includes("violet")) m.actCol="Green";
-   else if(r.color.includes("red")) m.actCol="Red";
+  
+  // Update counts
+  document.getElementById("bsBigCount").textContent = bigCount;
+  document.getElementById("bsSmallCount").textContent = smallCount;
+  document.getElementById("colorRedCount").textContent = redCount;
+  document.getElementById("colorGreenCount").textContent = greenCount;
+  
+  const bsBias = calcBias(bs, "bs");
+  const colBias = calcBias(col, "color");
+  
+  // Update visual indicators
+  const bsVisual = document.getElementById("bsVisual");
+  const colorVisual = document.getElementById("colorVisual");
+  
+  // Update Big/Small bias display
+  document.getElementById("bsBias").textContent = bsBias.label;
+  document.getElementById("bsBias").className = `biasMain ${bsBias.side}`;
+  document.getElementById("bsFlip").textContent = `Flip chance: ${bsBias.flip}%`;
+  
+  // Update Big/Small visual
+  if (bsBias.side === "Big") {
+    bsVisual.style.width = `${bsBias.percentage}%`;
+    bsVisual.style.background = "var(--accent-green)";
+  } else if (bsBias.side === "Small") {
+    bsVisual.style.width = `${bsBias.percentage}%`;
+    bsVisual.style.background = "var(--accent-red)";
+  } else {
+    bsVisual.style.width = "50%";
+    bsVisual.style.background = "var(--accent-yellow)";
   }
- });
-
- memory=memory.slice(0,10);
- localStorage.setItem("nh_memory",JSON.stringify(memory));
- renderTable();
-}
-
-function calcBias(seq){
- const recent=seq.slice(0,20);
- if(recent.length<10) return {label:"Neutral",side:"Neutral",flip:0};
-
- let count={};
- recent.forEach(x=>count[x]=(count[x]||0)+1);
- let entries=Object.entries(count).sort((a,b)=>b[1]-a[1]);
- let ratio=entries[0][1]/recent.length;
-
- let flips=0;
- for(let i=1;i<recent.length;i++) if(recent[i]!==recent[i-1]) flips++;
- flips=Math.round((flips/recent.length)*100);
-
- if(Math.abs(ratio-0.5)<0.07)
-  return {label:"Neutral",side:"Neutral",flip:flips};
-
- return {
-  label:entries[0][0]+" "+Math.round(ratio*100)+"%",
-  side:entries[0][0],
-  flip:flips
- };
-}
-
-function renderTable(){
- const t=document.getElementById("pvTable");
- t.innerHTML=`
-  <div class="cell"><b>Period</b></div>
-  <div class="cell"><b>Big / Small</b></div>
-  <div class="cell"><b>Color</b></div>
- `;
- memory.forEach(m=>{
-  let cls="neutral";
-  if(m.actBS!=="WAIT"){
-   cls=(m.predBS===m.actBS && m.predCol===m.actCol)?"good":"bad";
+  
+  // Update Color bias display
+  document.getElementById("colorBias").textContent = colBias.label;
+  document.getElementById("colorBias").className = `biasMain ${colBias.side}`;
+  document.getElementById("colorFlip").textContent = `Flip chance: ${colBias.flip}%`;
+  
+  // Update Color visual
+  if (colBias.side === "Green") {
+    colorVisual.style.width = `${colBias.percentage}%`;
+    colorVisual.style.background = "var(--accent-green)";
+  } else if (colBias.side === "Red") {
+    colorVisual.style.width = `${colBias.percentage}%`;
+    colorVisual.style.background = "var(--accent-red)";
+  } else {
+    colorVisual.style.width = "50%";
+    colorVisual.style.background = "var(--accent-yellow)";
   }
-  t.innerHTML+=`
-   <div class="cell">${m.period.slice(-5)}</div>
-   <div class="cell ${cls}">${m.predBS} / ${m.actBS}</div>
-   <div class="cell ${cls}">${m.predCol} / ${m.actCol}</div>
-  `;
- });
+  
+  // Memory management for predictions
+  if (!memory.find(m => m.period === running)) {
+    memory.unshift({
+      period: running,
+      predBS: bsBias.side,
+      predCol: colBias.side,
+      actBS: "WAIT",
+      actCol: "WAIT",
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  // Update actual results from recent draws
+  list.slice(0, 10).forEach(r => {
+    const m = memory.find(x => x.period === r.issueNumber);
+    if (m) {
+      m.actBS = (+r.number >= 5) ? "Big" : "Small";
+      
+      if (r.color.includes("green") && !r.color.includes("violet")) {
+        m.actCol = "Green";
+      } else if (r.color.includes("red")) {
+        m.actCol = "Red";
+      }
+    }
+  });
+  
+  // Keep only last 10 entries
+  memory = memory.slice(0, 10);
+  localStorage.setItem("nh_memory", JSON.stringify(memory));
+  renderTable();
 }
 
-renderTable();
-loadData();
+function calcBias(seq, type) {
+  const recent = seq.slice(0, 20);
+  if (recent.length < 10) return {
+    label: "Neutral",
+    side: "Neutral",
+    flip: 0,
+    percentage: 50
+  };
+  
+  let count = {};
+  recent.forEach(x => {
+    if (x) count[x] = (count[x] || 0) + 1;
+  });
+  
+  let entries = Object.entries(count).sort((a, b) => b[1] - a[1]);
+  let ratio = entries[0][1] / recent.length;
+  let percentage = Math.round(ratio * 100);
+  
+  // Calculate flip chance
+  let flips = 0;
+  for (let i = 1; i < recent.length; i++) {
+    if (recent[i] && recent[i-1] && recent[i] !== recent[i-1]) flips++;
+  }
+  flips = Math.round((flips / recent.length) * 100);
+  
+  // Neutral range: 45% to 55%
+  if (percentage >= 45 && percentage <= 55) {
+    return {
+      label: "Neutral",
+      side: "Neutral",
+      flip: flips,
+      percentage: 50
+    };
+  }
+  
+  return {
+    label: `${entries[0][0]} ${percentage}%`,
+    side: entries[0][0],
+    flip: flips,
+    percentage: percentage
+  };
+}
+
+function renderTable() {
+  const t = document.getElementById("pvTable");
+  t.innerHTML = "";
+  
+  memory.forEach(m => {
+    // Determine if prediction was correct
+    let status = "waiting";
+    let accuracy = "Waiting";
+    let statusClass = "neutral";
+    
+    if (m.actBS !== "WAIT") {
+      const bsCorrect = m.predBS === m.actBS;
+      const colorCorrect = m.predCol === m.actCol;
+      
+      if (bsCorrect && colorCorrect) {
+        status = "correct";
+        accuracy = "100%";
+        statusClass = "good";
+      } else if (bsCorrect || colorCorrect) {
+        status = "partial";
+        accuracy = "50%";
+        statusClass = "neutral";
+      } else {
+        status = "incorrect";
+        accuracy = "0%";
+        statusClass = "bad";
+      }
+    }
+    
+    // Create row
+    const row = document.createElement("div");
+    row.className = "table-row";
+    row.innerHTML = `
+      <div class="cell">${m.period.slice(-5)}</div>
+      <div class="cell ${statusClass}">
+        <span class="prediction-status ${status}"></span>
+        ${m.predBS} / ${m.actBS}
+      </div>
+      <div class="cell ${statusClass}">
+        <span class="prediction-status ${status}"></span>
+        ${m.predCol} / ${m.actCol}
+      </div>
+      <div class="cell ${statusClass}">
+        ${status === "waiting" ? "Waiting" : status === "correct" ? "Correct" : status === "partial" ? "Partial" : "Incorrect"}
+      </div>
+      <div class="cell ${statusClass}">${accuracy}</div>
+    `;
+    
+    t.appendChild(row);
+  });
+  
+  // If no data, show empty state
+  if (memory.length === 0) {
+    t.innerHTML = `<div class="cell" style="grid-column: 1 / -1; padding: 20px; color: var(--text-secondary);">No prediction data available yet. Data will appear after the next draw.</div>`;
+  }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+  renderTable();
+  loadData();
+  
+  // Add change event to market selector
+  document.getElementById('market').addEventListener('change', function() {
+    manualRefresh();
+  });
+});
 </script>
 
 </body>
