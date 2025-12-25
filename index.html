@@ -12,57 +12,18 @@ body{
  background:radial-gradient(circle at top,#1b2a40,#050712 70%);
  color:#eaf1ff;
 }
-header{
- padding:14px;
- border-bottom:1px solid rgba(255,255,255,.08)
-}
-.title{
- font-size:18px;
- font-weight:600;
- margin-bottom:6px
-}
-.topbar{
- display:flex;
- flex-wrap:wrap;
- gap:10px;
- align-items:center;
- justify-content:space-between
-}
+header{padding:14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.title{font-size:18px;font-weight:600;margin-bottom:6px}
+.topbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 select,button{
- background:#0d1a33;
- color:#fff;
- border:1px solid #2f4b8f;
- border-radius:8px;
- padding:6px 12px;
- cursor:pointer
+ background:#0d1a33;color:#fff;border:1px solid #2f4b8f;
+ border-radius:8px;padding:6px 12px;cursor:pointer
 }
-
-.container{
- padding:14px;
- display:grid;
- gap:14px
-}
-.card{
- background:rgba(255,255,255,.06);
- border-radius:14px;
- padding:14px
-}
-h3{
- margin:0 0 10px;
- font-size:15px
-}
-
-.biasMain{
- font-size:20px;
- font-weight:700;
- text-align:center
-}
-.biasSub{
- font-size:12px;
- opacity:.7;
- text-align:center;
- margin-top:4px
-}
+.container{padding:14px;display:grid;gap:14px}
+.card{background:rgba(255,255,255,.06);border-radius:14px;padding:14px}
+h3{margin:0 0 10px;font-size:15px}
+.biasMain{font-size:20px;font-weight:700;text-align:center}
+.biasSub{font-size:12px;opacity:.7;text-align:center;margin-top:4px}
 
 .table{
  font-size:13px;
@@ -76,17 +37,11 @@ h3{
  border-radius:6px;
  text-align:center
 }
-
 .good{color:#4dff88;font-weight:600}
 .bad{color:#ff5252;font-weight:600}
 .neutral{color:#ffc107;font-weight:600}
 
-footer{
- text-align:center;
- font-size:12px;
- opacity:.6;
- margin:12px
-}
+footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
 </style>
 </head>
 
@@ -96,10 +51,9 @@ footer{
  <div class="title">Noob Hacker – Market Pattern Dashboard</div>
  <div class="topbar">
   <select id="market">
-   <option value="30">30 Second Market</option>
-   <option value="60">1 Minute Market</option>
+   <option value="30">30 Second</option>
+   <option value="60">1 Minute</option>
   </select>
-
   <button onclick="manualRefresh()">Manual Refresh</button>
   <div id="countdown">Remaining: --</div>
  </div>
@@ -131,26 +85,20 @@ footer{
 
 </div>
 
-<footer>
-Pattern-based observation only • Credit: Noob Hacker
-</footer>
+<footer>Pattern-based observation only • Credit: Noob Hacker</footer>
 
 <script>
-/* ================= CONFIG ================= */
 const API_30="https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json";
 const API_60="https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
 const PROXY ="https://signal.chat31525.workers.dev/?url=";
 
-/* ================= STATE ================= */
 let timer,countTimer;
 let memory = JSON.parse(localStorage.getItem("nh_memory") || "[]");
 
-/* ================= CORE ================= */
 function manualRefresh(){
  clearTimers();
  loadData();
 }
-
 function clearTimers(){
  clearTimeout(timer);
  clearInterval(countTimer);
@@ -159,14 +107,13 @@ function clearTimers(){
 async function loadData(){
  const sec=document.getElementById("market").value;
  const API=sec==="30"?API_30:API_60;
-
  try{
   const res=await fetch(PROXY+encodeURIComponent(API+"?pageSize=500&pageNo=1"));
   const json=await res.json();
   if(json.code!==0) return;
   analyse(json.data.list);
   scheduleNext(sec);
- }catch(e){}
+ }catch{}
 }
 
 function scheduleNext(sec){
@@ -176,7 +123,6 @@ function scheduleNext(sec){
  startCountdown(delay);
  timer=setTimeout(loadData,delay);
 }
-
 function startCountdown(ms){
  let s=Math.floor(ms/1000);
  document.getElementById("countdown").textContent="Remaining: "+s+"s";
@@ -187,27 +133,25 @@ function startCountdown(ms){
  },1000);
 }
 
-/* ================= ANALYSIS ================= */
 function analyse(list){
  const running=(BigInt(list[0].issueNumber)+1n).toString();
  document.getElementById("runningPeriod").textContent=running;
 
- let bsSeq=[], colSeq=[];
+ let bs=[], col=[];
  list.forEach(r=>{
-  bsSeq.push(+r.number>=5?"Big":"Small");
-  colSeq.push(r.color.includes("green")?"Green":"Red");
+  bs.push(+r.number>=5?"Big":"Small");
+  if(r.color.includes("green") && !r.color.includes("violet")) col.push("Green");
+  else if(r.color.includes("red")) col.push("Red");
  });
 
- const bsBias=calcBias(bsSeq);
- const colBias=calcBias(colSeq);
+ const bsBias=calcBias(bs);
+ const colBias=calcBias(col);
 
  document.getElementById("bsBias").textContent=bsBias.label;
  document.getElementById("bsFlip").textContent="Flip chance: "+bsBias.flip+"%";
-
  document.getElementById("colorBias").textContent=colBias.label;
  document.getElementById("colorFlip").textContent="Flip chance: "+colBias.flip+"%";
 
- /* memory add (only once per period) */
  if(!memory.find(m=>m.period===running)){
   memory.unshift({
    period:running,
@@ -218,42 +162,43 @@ function analyse(list){
   });
  }
 
- /* fill actual results */
  list.slice(0,10).forEach(r=>{
   const m=memory.find(x=>x.period===r.issueNumber);
   if(m){
    m.actBS=(+r.number>=5)?"Big":"Small";
-   m.actCol=r.color.includes("green")?"Green":"Red";
+   if(r.color.includes("green") && !r.color.includes("violet")) m.actCol="Green";
+   else if(r.color.includes("red")) m.actCol="Red";
   }
  });
 
  memory=memory.slice(0,10);
  localStorage.setItem("nh_memory",JSON.stringify(memory));
-
  renderTable();
 }
 
-/* ================= BIAS ENGINE ================= */
 function calcBias(seq){
  const recent=seq.slice(0,20);
- let same=recent.filter(x=>x===recent[0]).length/recent.length;
+ if(recent.length<10) return {label:"Neutral",side:"Neutral",flip:0};
+
+ let count={};
+ recent.forEach(x=>count[x]=(count[x]||0)+1);
+ let entries=Object.entries(count).sort((a,b)=>b[1]-a[1]);
+ let ratio=entries[0][1]/recent.length;
 
  let flips=0;
- for(let i=1;i<recent.length;i++){
-  if(recent[i]!==recent[i-1]) flips++;
- }
+ for(let i=1;i<recent.length;i++) if(recent[i]!==recent[i-1]) flips++;
  flips=Math.round((flips/recent.length)*100);
 
- if(Math.abs(same-0.5)<0.08){
+ if(Math.abs(ratio-0.5)<0.07)
   return {label:"Neutral",side:"Neutral",flip:flips};
- }
 
- return same>0.5
-  ?{label:recent[0]+" "+Math.round(same*100)+"%",side:recent[0],flip:flips}
-  :{label:(recent[0]==="Big"?"Small":"Red")+" "+Math.round((1-same)*100)+"%",side:(recent[0]==="Big"?"Small":"Red"),flip:flips};
+ return {
+  label:entries[0][0]+" "+Math.round(ratio*100)+"%",
+  side:entries[0][0],
+  flip:flips
+ };
 }
 
-/* ================= TABLE ================= */
 function renderTable(){
  const t=document.getElementById("pvTable");
  t.innerHTML=`
@@ -261,13 +206,11 @@ function renderTable(){
   <div class="cell"><b>Big / Small</b></div>
   <div class="cell"><b>Color</b></div>
  `;
-
  memory.forEach(m=>{
   let cls="neutral";
   if(m.actBS!=="WAIT"){
    cls=(m.predBS===m.actBS && m.predCol===m.actCol)?"good":"bad";
   }
-
   t.innerHTML+=`
    <div class="cell">${m.period.slice(-5)}</div>
    <div class="cell ${cls}">${m.predBS} / ${m.actBS}</div>
@@ -276,8 +219,7 @@ function renderTable(){
  });
 }
 
-/* ================= INIT ================= */
-renderTable();   // show saved history on reload
+renderTable();
 loadData();
 </script>
 
