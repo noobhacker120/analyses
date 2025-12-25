@@ -1,59 +1,114 @@
-<!--
-UI: DeepSeek (UNCHANGED)
-Logic: Clean Pattern Engine (FIXED)
-No random result
-Real API based validation
--->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WinGo DeepSeek AI – Stable Pattern Engine</title>
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<title>WinGo AI Dashboard</title>
 
 <style>
-/* ========= DEEPSEEK UI – UNCHANGED ========= */
-:root{
---bg:#0f172a;
---card:#1e293b;
---accent:#3b82f6;
---green:#10b981;
---red:#ef4444;
---text:#e5e7eb;
---muted:#94a3b8;
-}
 body{
-background:linear-gradient(135deg,#0f172a,#1e1b4b);
-color:var(--text);
-font-family:Segoe UI,system-ui;
-padding:20px;
+  margin:0;
+  font-family:system-ui,-apple-system;
+  background:linear-gradient(135deg,#0f172a,#1e1b4b);
+  color:#fff
 }
-.container{max-width:1400px;margin:auto}
-.header,.card,.history{background:rgba(30,41,59,.85);border-radius:16px;padding:20px;margin-bottom:20px}
-.header h1{color:var(--accent)}
-.controls{display:flex;gap:10px;flex-wrap:wrap}
-select,button{padding:10px 18px;border-radius:10px;border:none;background:#0f172a;color:white}
-button.primary{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}
-.period{font-size:52px;color:#3b82f6;font-weight:900;text-align:center}
-.dashboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
-.prediction{font-size:36px;font-weight:800;text-align:center}
-.big{color:var(--green)}
-.small{color:var(--red)}
-.red{color:var(--red)}
-.green{color:var(--green)}
-.bar{height:8px;background:#111827;border-radius:4px;overflow:hidden;margin:10px 0}
-.fill{height:100%;background:linear-gradient(90deg,#10b981,#3b82f6)}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.stat{background:#0f172a;padding:10px;border-radius:10px;text-align:center}
+.container{max-width:1200px;margin:auto;padding:16px}
+.header{
+  background:rgba(30,41,59,.9);
+  border-radius:14px;
+  padding:16px;
+  text-align:center
+}
+.controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+select,button{
+  padding:10px 16px;
+  border-radius:8px;
+  background:#0f172a;
+  color:#fff;
+  border:1px solid rgba(255,255,255,.15);
+  cursor:pointer
+}
+button{background:#3b82f6;border:none;font-weight:600}
+#countdown{
+  padding:10px 16px;
+  background:rgba(59,130,246,.15);
+  border-radius:8px;
+  min-width:150px
+}
+.period{
+  text-align:center;
+  margin:20px 0;
+  background:rgba(30,41,59,.6);
+  border-radius:14px;
+  padding:16px
+}
+.period-number{
+  font-size:48px;
+  font-weight:900;
+  color:#3b82f6
+}
+.dashboard{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  gap:16px
+}
+.card{
+  background:rgba(30,41,59,.7);
+  border-radius:14px;
+  padding:16px
+}
+.card h3{color:#94a3b8;margin-bottom:10px}
+.prediction{
+  font-size:36px;
+  font-weight:800;
+  text-align:center;
+  margin:10px 0
+}
+.big{color:#10b981}
+.small{color:#ef4444}
+.red{color:#ef4444}
+.green{color:#10b981}
+.bar{
+  height:8px;
+  background:rgba(255,255,255,.1);
+  border-radius:4px;
+  overflow:hidden;
+  margin:10px 0
+}
+.fill{
+  height:100%;
+  background:linear-gradient(90deg,#10b981,#3b82f6)
+}
+.stats{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:10px
+}
+.stat{
+  background:rgba(15,23,42,.6);
+  border-radius:8px;
+  padding:10px;
+  text-align:center
+}
+.stat-value{font-size:20px;font-weight:700}
+.stat-label{font-size:12px;color:#94a3b8}
+.history{
+  margin-top:20px;
+  background:rgba(30,41,59,.7);
+  border-radius:14px;
+  padding:16px
+}
 table{width:100%;border-collapse:collapse}
-th,td{padding:10px;border-bottom:1px solid #334155;font-size:14px}
-.correct{color:var(--green)}
-.incorrect{color:var(--red)}
-.waiting{color:#f59e0b}
-/* ========================================= */
+th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,.1);font-size:13px}
+th{color:#94a3b8;text-align:left}
+.wait{color:#f59e0b}
+.footer{
+  text-align:center;
+  margin-top:20px;
+  color:#64748b;
+  font-size:12px
+}
 </style>
 </head>
 
@@ -61,148 +116,141 @@ th,td{padding:10px;border-bottom:1px solid #334155;font-size:14px}
 <div class="container">
 
 <div class="header">
-<h1><i class="fas fa-brain"></i> WinGo DeepSeek AI</h1>
-<div class="controls">
-<select id="market">
-<option value="30">30s Market</option>
-<option value="60">1m Market</option>
-</select>
-<button class="primary" onclick="loadData()">Refresh</button>
-<div id="timer">--</div>
-</div>
+  <h2>WinGo AI Pattern Dashboard</h2>
+  <div class="controls">
+    <select id="market">
+      <option value="30">30 Second</option>
+      <option value="60">1 Minute</option>
+    </select>
+    <button onclick="loadData()">Manual Refresh</button>
+    <div id="countdown">--</div>
+  </div>
 </div>
 
-<div class="card">
-<div class="period" id="period">--</div>
-<div style="text-align:center;color:var(--muted)">Running Period</div>
+<div class="period">
+  <div>Running Period</div>
+  <div class="period-number" id="period">--</div>
+  <div id="status">Waiting for data…</div>
 </div>
 
 <div class="dashboard">
+  <div class="card">
+    <h3>Big / Small</h3>
+    <div class="prediction" id="bs">--</div>
+    <div class="bar"><div class="fill" id="bsBar"></div></div>
+    <div class="stats">
+      <div class="stat"><div class="stat-value" id="bigCount">0</div><div class="stat-label">Big</div></div>
+      <div class="stat"><div class="stat-value" id="smallCount">0</div><div class="stat-label">Small</div></div>
+    </div>
+  </div>
 
-<div class="card">
-<h3>Big / Small</h3>
-<div class="prediction" id="bs">--</div>
-<div class="bar"><div class="fill" id="bsBar"></div></div>
-<div style="text-align:center">Confidence <span id="bsConf">0%</span></div>
-</div>
-
-<div class="card">
-<h3>Color</h3>
-<div class="prediction" id="color">--</div>
-<div class="bar"><div class="fill" id="cBar"></div></div>
-<div style="text-align:center">Confidence <span id="cConf">0%</span></div>
-</div>
-
-<div class="card">
-<h3>Combined</h3>
-<div class="prediction" id="combo">--</div>
-<div id="rec" style="text-align:center;color:var(--muted)"></div>
-</div>
-
+  <div class="card">
+    <h3>Color</h3>
+    <div class="prediction" id="color">--</div>
+    <div class="bar"><div class="fill" id="colorBar"></div></div>
+    <div class="stats">
+      <div class="stat"><div class="stat-value" id="redCount">0</div><div class="stat-label">Red</div></div>
+      <div class="stat"><div class="stat-value" id="greenCount">0</div><div class="stat-label">Green</div></div>
+    </div>
+  </div>
 </div>
 
 <div class="history">
-<h3>Prediction vs Actual (Last 10)</h3>
-<table>
-<thead>
-<tr>
-<th>Period</th>
-<th>Big / Small</th>
-<th>Color</th>
-</tr>
-</thead>
-<tbody id="history"></tbody>
-</table>
+  <h3>Last 10 History</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Period</th>
+        <th>Number</th>
+        <th>Big/Small</th>
+        <th>Color</th>
+      </tr>
+    </thead>
+    <tbody id="history"></tbody>
+  </table>
+</div>
+
+<div class="footer">
+  Real API • Proxy Fixed • No Demo Data
 </div>
 
 </div>
 
 <script>
-/* ========== CLEAN PATTERN ENGINE ========== */
-
-const API={
-30:'https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json',
-60:'https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json'
+const API = {
+  30: "https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json",
+  60: "https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json"
 };
-
-const STORE='deepseek_engine_v1';
-let history=JSON.parse(localStorage.getItem(STORE)||'[]');
+const PROXY = "https://signal.chat31525.workers.dev/?url=";
+let timer;
 
 async function loadData(){
-const m=document.getElementById('market').value;
-const url='https://api.allorigins.win/raw?url='+encodeURIComponent(API[m]+'?pageSize=100&pageNo=1');
-const r=await fetch(url);
-const j=await r.json();
-const list=j.data.list;
+  clearInterval(timer);
+  document.getElementById("status").textContent="Loading from API...";
+  const m=document.getElementById("market").value;
+  const url = PROXY + encodeURIComponent(API[m]+"?pageSize=100&pageNo=1");
 
-list.sort((a,b)=>b.issueNumber.localeCompare(a.issueNumber));
+  try{
+    const res = await fetch(url);
+    const json = await res.json();
+    if(json.code!==0) throw "API error";
 
-const running=(BigInt(list[0].issueNumber)+1n).toString();
-document.getElementById('period').textContent=running;
-
-const past=list.slice(1,51);
-
-let B=0,S=0,R=0,G=0;
-past.forEach(d=>{
-const n=parseInt(d.number);
-if(n>=5)B++;else S++;
-if(d.color.includes('red'))R++;
-if(d.color.includes('green'))G++;
-});
-
-const bs=B>=S?'BIG':'SMALL';
-const color=R>=G?'RED':'GREEN';
-
-const bsConf=Math.min(95,50+Math.abs(B-S));
-const cConf=Math.min(95,50+Math.abs(R-G));
-
-document.getElementById('bs').textContent=bs;
-document.getElementById('bs').className='prediction '+bs.toLowerCase();
-document.getElementById('bsBar').style.width=bsConf+'%';
-document.getElementById('bsConf').textContent=bsConf+'%';
-
-document.getElementById('color').textContent=color;
-document.getElementById('color').className='prediction '+color.toLowerCase();
-document.getElementById('cBar').style.width=cConf+'%';
-document.getElementById('cConf').textContent=cConf+'%';
-
-document.getElementById('combo').textContent=bs[0]+color[0];
-document.getElementById('rec').textContent=
-(bsConf+cConf)/2>=70?'GOOD SIGNAL':'WAIT';
-
-savePrediction(running,bs,color,list[0]);
-renderHistory();
+    const list=json.data.list;
+    updateUI(list);
+    startTimer(m);
+  }catch(e){
+    document.getElementById("status").textContent="API / Proxy error";
+  }
 }
 
-function savePrediction(period,bs,color,lastDraw){
-if(history.find(h=>h.period===period))return;
+function updateUI(list){
+  const latest=list[0];
+  document.getElementById("period").textContent=(BigInt(latest.issueNumber)+1n).toString();
+  document.getElementById("status").textContent="Live data loaded";
 
-const actualBS=parseInt(lastDraw.number)>=5?'BIG':'SMALL';
-const actualColor=lastDraw.color.includes('red')?'RED':'GREEN';
+  let big=0,small=0,red=0,green=0;
 
-history.unshift({
-period,
-bs:`${bs} / ${actualBS}`,
-color:`${color} / ${actualColor}`,
-bsOk:bs===actualBS,
-cOk:color===actualColor
-});
+  list.slice(0,50).forEach(r=>{
+    const n=+r.number;
+    n>=5?big++:small++;
+    if(r.color.includes("red")) red++;
+    if(r.color.includes("green")) green++;
+  });
 
-history=history.slice(0,10);
-localStorage.setItem(STORE,JSON.stringify(history));
+  const total=big+small;
+  const bigPct=Math.round(big/total*100);
+  document.getElementById("bs").textContent=bigPct>=50?"BIG":"SMALL";
+  document.getElementById("bs").className="prediction "+(bigPct>=50?"big":"small");
+  document.getElementById("bsBar").style.width=bigPct+"%";
+  document.getElementById("bigCount").textContent=big;
+  document.getElementById("smallCount").textContent=small;
+
+  const colorTotal=red+green;
+  const redPct=Math.round(red/colorTotal*100);
+  document.getElementById("color").textContent=redPct>=50?"RED":"GREEN";
+  document.getElementById("color").className="prediction "+(redPct>=50?"red":"green");
+  document.getElementById("colorBar").style.width=redPct+"%";
+  document.getElementById("redCount").textContent=red;
+  document.getElementById("greenCount").textContent=green;
+
+  document.getElementById("history").innerHTML=
+    list.slice(0,10).map(r=>`
+      <tr>
+        <td>${r.issueNumber.slice(-5)}</td>
+        <td>${r.number}</td>
+        <td>${+r.number>=5?"Big":"Small"}</td>
+        <td>${r.color}</td>
+      </tr>`).join("");
 }
 
-function renderHistory(){
-const t=document.getElementById('history');
-t.innerHTML='';
-history.forEach(h=>{
-t.innerHTML+=`
-<tr>
-<td>${h.period}</td>
-<td class="${h.bsOk?'correct':'incorrect'}">${h.bs}</td>
-<td class="${h.cOk?'correct':'incorrect'}">${h.color}</td>
-</tr>`;
-});
+function startTimer(sec){
+  let t=sec;
+  document.getElementById("countdown").textContent=t+"s";
+  timer=setInterval(()=>{
+    t--;
+    document.getElementById("countdown").textContent=t+"s";
+    if(t<=0) loadData();
+  },1000);
 }
 
 loadData();
