@@ -19,11 +19,6 @@ select,button{
  background:#0d1a33;color:#fff;border:1px solid #2f4b8f;
  border-radius:8px;padding:6px 12px;cursor:pointer
 }
-.status{display:flex;gap:10px;font-size:12px}
-.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
-.green{background:#4dff88}
-.red{background:#ff5252}
-.gray{background:#777}
 
 .container{padding:14px;display:grid;gap:14px}
 .card{background:rgba(255,255,255,.06);border-radius:14px;padding:14px}
@@ -35,7 +30,7 @@ h3{margin:0 0 10px;font-size:15px}
 .table{
  font-size:13px;
  display:grid;
- grid-template-columns:80px 1fr 1fr 80px;
+ grid-template-columns:70px 1fr 1fr 1fr 80px;
  gap:6px;
 }
 .cell{
@@ -58,17 +53,11 @@ footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
  <div class="title">Noob Hacker – Market Pattern Dashboard</div>
  <div class="topbar">
   <select id="market">
-   <option value="30">30 Second Market</option>
-   <option value="60">1 Minute Market</option>
+   <option value="30">30 Second</option>
+   <option value="60">1 Minute</option>
   </select>
-
   <button onclick="manualRefresh()">Manual Refresh</button>
   <div id="countdown">Remaining: --</div>
-
-  <div class="status">
-   <span><i class="dot" id="netDot"></i> Net</span>
-   <span><i class="dot" id="apiDot"></i> API</span>
-  </div>
  </div>
 </header>
 
@@ -86,6 +75,12 @@ footer{text-align:center;font-size:12px;opacity:.6;margin:12px}
  </div>
 
  <div class="card">
+  <h3>Color Bias</h3>
+  <div class="biasMain" id="colorBias">--</div>
+  <div class="biasSub" id="colorFlip">Flip chance: --</div>
+ </div>
+
+ <div class="card">
   <h3>Prediction vs Actual (Last 10)</h3>
   <div class="table" id="pvTable"></div>
  </div>
@@ -99,30 +94,25 @@ Pattern-based observation only • Credit: Noob Hacker
 <script>
 const API_30="https://draw.ar-lottery01.com/WinGo/WinGo_30S/GetHistoryIssuePage.json";
 const API_60="https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json";
-const PROXY ="https://signal.chat31525.workers.dev/?url=";
+const PROXY="https://signal.chat31525.workers.dev/?url=";
 
 let timer,countTimer;
-let memory=[];
 
-function setDot(id,c){document.getElementById(id).className="dot "+c}
+/* 🔥 PERSISTENT MEMORY */
+let memory = JSON.parse(localStorage.getItem("nh_memory") || "[]");
+
 function manualRefresh(){clearTimers();loadData()}
 function clearTimers(){clearTimeout(timer);clearInterval(countTimer)}
 
 async function loadData(){
- setDot("netDot",navigator.onLine?"green":"red");
- setDot("apiDot","gray");
-
  const sec=document.getElementById("market").value;
  const API=sec==="30"?API_30:API_60;
-
  try{
   const res=await fetch(PROXY+encodeURIComponent(API+"?pageSize=500&pageNo=1"));
   const json=await res.json();
-  if(json.code!==0)throw 1;
-  setDot("apiDot","green");
   analyse(json.data.list);
   scheduleNext(sec);
- }catch{setDot("apiDot","red")}
+ }catch{}
 }
 
 function scheduleNext(sec){
@@ -132,7 +122,6 @@ function scheduleNext(sec){
  startCountdown(delay);
  timer=setTimeout(loadData,delay);
 }
-
 function startCountdown(ms){
  let s=Math.floor(ms/1000);
  document.getElementById("countdown").textContent="Remaining: "+s+"s";
@@ -147,69 +136,87 @@ function analyse(list){
  const running=(BigInt(list[0].issueNumber)+1n).toString();
  document.getElementById("runningPeriod").textContent=running;
 
- /* ----- PATTERN LOGIC ----- */
- let seq=list.map(r=>(+r.number>=5?"Big":"Small"));
+ let bsSeq=[], colSeq=[];
+ list.forEach(r=>{
+  bsSeq.push(+r.number>=5?"Big":"Small");
+  colSeq.push(r.color.includes("green")?"Green":"Red");
+ });
 
- const overall=seq.slice(0,500);
- const recent=seq.slice(0,20);
+ const bsBias=calcBias(bsSeq);
+ const colBias=calcBias(colSeq);
 
- const overallBias=(overall.filter(x=>x==="Big").length/overall.length)-0.5;
- const momentum=(recent.filter(x=>x==="Big").length/recent.length)-0.5;
+ document.getElementById("bsBias").textContent=bsBias.label;
+ document.getElementById("bsFlip").textContent="Flip chance: "+bsBias.flip+"%";
+ document.getElementById("colorBias").textContent=colBias.label;
+ document.getElementById("colorFlip").textContent="Flip chance: "+colBias.flip+"%";
 
- let flips=0;
- for(let i=1;i<recent.length;i++)if(recent[i]!==recent[i-1])flips++;
- flips/=recent.length;
-
- let bias=overallBias*0.4 + momentum*0.6 - flips*0.3;
- bias=Math.max(-0.25,Math.min(0.25,bias));
-
- const bigPct=Math.round((0.5+bias)*100);
- const smallPct=100-bigPct;
-
- document.getElementById("bsBias").textContent=
-  Math.abs(bigPct-smallPct)<6 ? "Neutral" :
-  bigPct>smallPct?`Big ${bigPct}%`:`Small ${smallPct}%`;
-
- document.getElementById("bsFlip").textContent=
-  "Flip chance: "+Math.round(flips*100)+"%";
-
- /* ----- MEMORY ----- */
  if(!memory.find(m=>m.period===running)){
-  memory.unshift({period:running,pred:bigPct>smallPct?"Big":"Small",actual:"WAIT"});
+  memory.unshift({
+   period:running,
+   predBS:bsBias.side,
+   predCol:colBias.side,
+   actBS:"WAIT",
+   actCol:"WAIT"
+  });
  }
 
  list.slice(0,10).forEach(r=>{
   const m=memory.find(x=>x.period===r.issueNumber);
-  if(m)m.actual=(+r.number>=5)?"Big":"Small";
+  if(m){
+   m.actBS=(+r.number>=5)?"Big":"Small";
+   m.actCol=r.color.includes("green")?"Green":"Red";
+  }
  });
 
  memory=memory.slice(0,10);
+
+ /* 💾 SAVE MEMORY */
+ localStorage.setItem("nh_memory", JSON.stringify(memory));
+
  renderTable();
+}
+
+function calcBias(seq){
+ const recent=seq.slice(0,20);
+ let same=recent.filter(x=>x===recent[0]).length/recent.length;
+ let flips=0;
+ for(let i=1;i<recent.length;i++)if(recent[i]!==recent[i-1])flips++;
+ flips=Math.round((flips/recent.length)*100);
+
+ if(Math.abs(same-0.5)<0.08)
+  return {label:"Neutral",side:"Neutral",flip:flips};
+
+ return same>0.5
+  ?{label:recent[0]+" "+Math.round(same*100)+"%",side:recent[0],flip:flips}
+  :{label:(recent[0]==="Big"?"Small":"Red")+" "+Math.round((1-same)*100)+"%",side:(recent[0]==="Big"?"Small":"Red"),flip:flips};
 }
 
 function renderTable(){
  const t=document.getElementById("pvTable");
  t.innerHTML=`
   <div class="cell"><b>Period</b></div>
-  <div class="cell"><b>Script BS</b></div>
+  <div class="cell"><b>Pred BS</b></div>
   <div class="cell"><b>Actual BS</b></div>
+  <div class="cell"><b>Pred Color</b></div>
   <div class="cell"><b>Result</b></div>
  `;
  memory.forEach(m=>{
   let res="WAIT",cls="wait";
-  if(m.actual!=="WAIT"){
-   res=m.pred===m.actual?"MATCH":"MISS";
+  if(m.actBS!=="WAIT"){
+   res=(m.predBS===m.actBS && m.predCol===m.actCol)?"MATCH":"MISS";
    cls=res==="MATCH"?"match":"miss";
   }
   t.innerHTML+=`
    <div class="cell">${m.period.slice(-5)}</div>
-   <div class="cell">${m.pred}</div>
-   <div class="cell">${m.actual}</div>
+   <div class="cell">${m.predBS}</div>
+   <div class="cell">${m.actBS}</div>
+   <div class="cell">${m.predCol}</div>
    <div class="cell ${cls}">${res}</div>
   `;
  });
 }
 
+renderTable(); /* render saved history on load */
 loadData();
 </script>
 
